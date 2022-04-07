@@ -46,8 +46,18 @@ const Page = ({ auctionHouse, nft }: PageProps) => {
 }
 ```
 
-## Contributing
+## Deploy
+
+```
+yarn build
+```
+
+## Publish
+
+```
+npm publish
+```
+
+## Contribute
 
 As with all [Holaplex](https://www.holaplex.com/) repositories contributions are welcome. Please fork and publish a pull request with any fixes or enhancements.
-
-
