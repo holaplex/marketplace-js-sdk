@@ -118,14 +118,9 @@ export interface UserWallet {
 }
 
 export interface NftOwnerWallet extends UserWallet {
+  address: string
   associatedTokenAccountAddress: string
 }
-
-interface AddressKeyType {
-  [address: string]: string
-}
-
-export type KeyType = AddressKeyType
 
 export interface Listing {
   address: string
@@ -161,20 +156,20 @@ export interface Offer {
   tradeState: string
 }
 
-export interface Nft extends KeyType {
+export interface Nft {
   name: string
   address: string
-  description: string
-  image: string
-  sellerFeeBasisPoints: number
+  description?: string
+  image?: string
+  sellerFeeBasisPoints?: number
   mintAddress: string
-  attributes: NftAttribute[]
-  creators: UserWallet[]
+  attributes?: NftAttribute[]
+  creators?: UserWallet[]
   owner: NftOwnerWallet
-  listings: Listing[]
-  purchases: Purchase[]
-  offers: Offer[]
-  activities: Activity[]
+  listings?: Listing[]
+  purchases?: Purchase[]
+  offers?: Offer[]
+  activities?: Activity[]
 }
 
 export interface AttributeFilter {
