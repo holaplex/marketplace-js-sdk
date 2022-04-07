@@ -1,6 +1,6 @@
 # Holaplex Marketplace Standard JS SDK
 
-Submit actions to the [Metaplex Auction House](https://docs.metaplex.com/auction-house/definition) program that adhere to the Holaplex Marketplace Standard. Its recommend to leverage the sdk with typescript to get access to the package type definitions.
+Submit actions to the [Metaplex Auction House](https://docs.metaplex.com/auction-house/definition) program that adhere to the Holaplex Marketplace Standard. Its recommend to leverage the sdk with typescript to get access to the package type definitions and code completion.
 
 ## Setup
 
@@ -17,7 +17,7 @@ Examples of using the sdk from different javascript based development environmen
 
 ### React
 
-```javascript
+```typescript
 import { initMarketplaceSDK, AuctionHouse, Nft } from '@holaplex/marketplace-js-sdk'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 
