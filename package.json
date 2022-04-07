@@ -1,0 +1,42 @@
+{
+  "name": "@holaplex/marketplace-js-sdk",
+  "version": "0.1.0",
+  "description": "Holaplex Marketplace Standard Actions for the Metaplex Auction House program",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "yarn jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/holaplex/marketplace-js-sdk.git"
+  },
+  "keywords": [
+    "solana",
+    "metaplex",
+    "holaplex"
+  ],
+  "author": "Holaplex Engineering <hola@holaplex.com>",
+  "license": "AGPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/holaplex/marketplace-js-sdk/issues"
+  },
+  "homepage": "https://github.com/holaplex/marketplace-js-sdk#readme",
+  "devDependencies": {
+    "@types/jest": "^27.4.1",
+    "jest": "^27.5.1",
+    "ts-jest": "^27.1.4",
+    "typescript": "^4.6.3"
+  },
+  "dependencies": {
+    "@metaplex-foundation/mpl-auction-house": "^1.1.1",
+    "@metaplex/js": "^4.12.0",
+    "@solana/spl-token": "^0.2.0",
+    "@solana/wallet-adapter-react": "^0.15.4",
+    "@solana/web3.js": "^1.37.1",
+    "bn.js": "^5.2.0"
+  }
+}
