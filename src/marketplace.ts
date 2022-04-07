@@ -5,7 +5,7 @@ import {
 } from '@solana/web3.js'
 import { programs, Wallet } from '@metaplex/js'
 import { updateAuctionHouse } from './instructions'
-import { MarktplaceSettingsPayload } from './types'
+import { MarktplaceSettingsPayload, AuctionHouse } from './types'
 import ipfsSDK from './ipfs'
 import { Client } from './client'
 import { OffersClient } from './offers'
@@ -20,22 +20,7 @@ export interface MarketplaceClientParams {
   wallet: Wallet
 }
 
-interface ClientStore {
-  offers: OffersClient
-  listings: ListingsClient
-}
-
 export class MarketplaceClient extends Client {
-  private clients: ClientStore
-
-  constructor({ connection, wallet }: MarketplaceClientParams) {
-    super(connection, wallet)
-    this.clients = {
-      offers: new OffersClient(this.connection, this.wallet),
-      listings: new ListingsClient(this.connection, this.wallet)
-    }
-  }
-
   async create() {
     throw Error("Not implemented")
   }
@@ -98,12 +83,12 @@ export class MarketplaceClient extends Client {
     if (txtId) await connection.confirmTransaction(txtId, 'confirmed')
   }
 
-  offers(): OffersClient {
-    return this.clients.offers
+  offers(auctionHouse: AuctionHouse): OffersClient {
+    return new OffersClient(this.connection, this.wallet, auctionHouse)
   }
 
-  listings(): ListingsClient {
-    return this.clients.listings
+  listings(auctionHouse: AuctionHouse): ListingsClient {
+    return new ListingsClient(this.connection, this.wallet, auctionHouse)
   }
 }
 
@@ -111,5 +96,5 @@ export const initMarketplaceSDK = (
   connection: Connection,
   wallet: Wallet
 ): MarketplaceClient => {
-  return new MarketplaceClient({ connection, wallet })
+  return new MarketplaceClient(connection, wallet)
 }

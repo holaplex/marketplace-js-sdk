@@ -33,11 +33,11 @@ const Page = ({ auctionHouse, nft }: PageProps) => {
   const sdk = useMemo(() => initMarketplaceSDK(connection, wallet), [connection, wallet])
 
   const onListNft = ({ amount }: <{ amount: number }>) => {
-    await sdk.listings().post({ amount, auctionHouse, nft })
+    await sdk.listings(auctionHouse).post({ amount, nft })
   }
 
   const onMakeOffer = ({ amount }: <{ amount: number }>) => {
-    await sdk.offers().make({ amount, auctionHouse, nft })
+    await sdk.offers(auctionHouse).make({ amount, nft })
   }
 
   return (
