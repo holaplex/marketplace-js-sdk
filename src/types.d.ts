@@ -164,7 +164,7 @@ export interface Nft {
   sellerFeeBasisPoints?: number
   mintAddress: string
   attributes?: NftAttribute[]
-  creators?: UserWallet[]
+  creators: UserWallet[]
   owner: NftOwnerWallet
   listings?: Listing[]
   purchases?: Purchase[]
