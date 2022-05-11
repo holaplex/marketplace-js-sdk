@@ -32,9 +32,9 @@ export interface MarketplaceCreatorPayload {
 
 export interface MarketplaceAddressPayload {
   owner?: string
-  auctionHouse: string
-  store?: string
-  storeConfig?: string
+}
+interface MarketplaceAuctionHousePayload {
+  address: string
 }
 export interface MarktplaceSettingsPayload {
   meta: MarktetplaceMetaPayload
@@ -42,6 +42,7 @@ export interface MarktplaceSettingsPayload {
   creators: MarketplaceCreatorPayload[]
   subdomain: string
   address: MarketplaceAddressPayload
+  auctionHouses: MarketplaceAuctionHousePayload[]
 }
 
 export interface Marketplace {
