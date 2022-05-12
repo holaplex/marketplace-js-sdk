@@ -43,6 +43,8 @@ export class MarketplaceClient extends Client {
     const storeConfigPubkey = await StoreConfig.getPDA(storePubkey)
 
     settings.address.owner = publicKey.toBase58()
+    settings.address.store = storePubkey.toBase58()
+    settings.address.storeConfig = storeConfigPubkey.toBase58()
 
     const storefrontSettings = new File(
       [JSON.stringify(settings)],

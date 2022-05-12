@@ -32,6 +32,8 @@ export interface MarketplaceCreatorPayload {
 
 export interface MarketplaceAddressPayload {
   owner?: string
+  store?: string
+  storeConfig?: string
 }
 interface MarketplaceAuctionHousePayload {
   address: string
