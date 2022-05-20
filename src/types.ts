@@ -53,6 +53,7 @@ export interface Marketplace {
   description: string
   logoUrl: string
   bannerUrl: string
+  auctionHouses?: AuctionHouse[]
   auctionHouse: AuctionHouse
   ownerAddress: string
   creators?: MarketplaceCreator[]
@@ -67,6 +68,9 @@ export interface MarketplaceCreator {
   creatorAddress: string
   storeConfigAddress: string
   preview?: Nft[]
+  twitterHandle?: string
+  profile?: TwitterProfile | null
+  nftCount?: number
 }
 
 export interface AuctionHouse {
@@ -99,13 +103,13 @@ export interface AttributeGroup {
 
 export interface MintStats {
   volume24hr: BN
+  volumeTotal: BN
   average: BN
   floor: BN
   mint: string
   auctionHouse: string
 }
-export interface Creator {
-  address: string
+export interface Creator extends UserWallet {
   attributeGroups: AttributeGroup[]
   stats: MintStats[]
   counts: CreatorCounts
@@ -118,11 +122,20 @@ export interface NftAttribute {
 
 export interface UserWallet {
   address: string
+  profile?: TwitterProfile | null
 }
 
 export interface NftOwnerWallet extends UserWallet {
-  address: string
   associatedTokenAccountAddress: string
+  twitterHandle?: string
+}
+
+export interface NftCreatorWallet extends UserWallet {
+  twitterHandle?: string
+  metadataAddress: string
+  share: number
+  verified: boolean
+  position: number
 }
 
 export interface Listing {
@@ -159,6 +172,11 @@ export interface Offer {
   tradeState: string
 }
 
+export interface NftFile {
+  fileType: String
+  uri: String
+}
+
 export interface Nft {
   name: string
   address: string
@@ -173,6 +191,7 @@ export interface Nft {
   purchases?: Purchase[]
   offers?: Offer[]
   activities?: Activity[]
+  files?: NftFile[]
 }
 
 export interface AttributeFilter {
@@ -209,4 +228,12 @@ export interface Activity {
   createdAt: string
   wallets: string[]
   activityType: string
+  nft: Nft
+}
+
+export interface TwitterProfile {
+  handle: string
+  profileImageUrl: string
+  bannerImageUrl: string
+  description: string
 }
