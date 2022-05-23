@@ -44,7 +44,7 @@ export interface MarktplaceSettingsPayload {
   creators: MarketplaceCreatorPayload[]
   subdomain: string
   address: MarketplaceAddressPayload
-  auctionHouses: MarketplaceAuctionHousePayload[]
+  auctionHouses?: MarketplaceAuctionHousePayload[]
 }
 
 export interface Marketplace {

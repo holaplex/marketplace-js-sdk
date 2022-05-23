@@ -17,24 +17,6 @@ export interface MarketplaceClientParams {
   wallet: Wallet
 }
 
-export type EditTokensParams = MarketplaceBaseParams & {
-  originalAuctionHouses: AuctionHouse[]
-  tokens: { address: string }[]
-}
-
-interface MarketplaceBaseParams {
-  logo: { uri: string; type?: string; name?: string }
-  banner: { uri: string; type?: string; name?: string }
-  subdomain: string
-  name: string
-  description: string
-  transactionFee: number
-  creators: { address: string }[]
-}
-
-export type EditMarketplaceParams = MarketplaceBaseParams & {
-  auctionHouses: { address: string }[]
-}
 export class MarketplaceClient extends Client {
   async create() {
     throw Error('Not implemented')
