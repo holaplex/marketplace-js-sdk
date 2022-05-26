@@ -51,7 +51,7 @@ export class ListingsClient extends Client {
     this.auctionHouse = auctionHouse
   }
 
-  async post({ amount, nft }: PostListingParams): Promise<void> {
+  async post({ amount, nft }: PostListingParams): Promise<ListingsClient> {
     const { publicKey, signTransaction } = this.wallet
     const connection = this.connection
     const ah = this.auctionHouse
@@ -136,17 +136,11 @@ export class ListingsClient extends Client {
 
     txt.add(sellInstruction).add(printListingReceiptInstruction)
 
-    txt.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
-    txt.feePayer = publicKey
-
-    const signed = await signTransaction(txt)
-
-    const signature = await connection.sendRawTransaction(signed.serialize())
-
-    await connection.confirmTransaction(signature, 'confirmed')
+    this.addTransaction(txt)
+    return this
   }
 
-  async cancel({ listing, nft }: CancelListingParams) {
+  async cancel({ listing, nft }: CancelListingParams): Promise<ListingsClient> {
     const { publicKey, signTransaction } = this.wallet
     const connection = this.connection
     const ah = this.auctionHouse
@@ -201,16 +195,11 @@ export class ListingsClient extends Client {
 
     txt.add(cancelInstruction).add(cancelListingReceiptInstruction)
 
-    txt.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
-    txt.feePayer = publicKey
-    const signed = await signTransaction(txt)
-
-    const signature = await connection.sendRawTransaction(signed.serialize())
-
-    await connection.confirmTransaction(signature, 'confirmed')
+    this.addTransaction(txt)
+    return this
   }
 
-  async buy({ listing, nft }: BuyListingParams) {
+  async buy({ listing, nft }: BuyListingParams): Promise<ListingsClient> {
     const { publicKey, signTransaction } = this.wallet
     const connection = this.connection
     const ah = this.auctionHouse
@@ -376,13 +365,7 @@ export class ListingsClient extends Client {
       )
       .add(printPurchaseReceiptInstruction)
 
-    txt.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
-    txt.feePayer = publicKey
-
-    const signed = await signTransaction(txt)
-
-    const signature = await connection.sendRawTransaction(signed.serialize())
-
-    await connection.confirmTransaction(signature, 'confirmed')
+    this.addTransaction(txt)
+    return this
   }
 }

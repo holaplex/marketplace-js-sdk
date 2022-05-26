@@ -1,4 +1,9 @@
-import { Connection, PublicKey, Transaction } from '@solana/web3.js'
+import {
+  Connection,
+  PublicKey,
+  Transaction,
+  TransactionInstruction,
+} from '@solana/web3.js'
 import { programs, Wallet } from '@metaplex/js'
 import { updateAuctionHouse } from './instructions'
 import { MarktplaceSettingsPayload, AuctionHouse } from './types'
@@ -25,11 +30,9 @@ export class MarketplaceClient extends Client {
   async update(
     settings: MarktplaceSettingsPayload,
     transactionFee: number
-  ): Promise<void> {
+  ): Promise<MarketplaceClient> {
     const wallet = this.wallet
     const publicKey = wallet.publicKey as PublicKey
-    const connection = this.connection
-
     const storePubkey = await Store.getPDA(publicKey)
     const storeConfigPubkey = await StoreConfig.getPDA(storePubkey)
 
@@ -67,17 +70,8 @@ export class MarketplaceClient extends Client {
     }
 
     transaction.add(setStorefrontV2Instructions)
-    transaction.feePayer = publicKey
-    transaction.recentBlockhash = (
-      await connection.getLatestBlockhash()
-    ).blockhash
-
-    const signedTransaction = await wallet.signTransaction(transaction)
-    const txtId = await connection.sendRawTransaction(
-      signedTransaction.serialize()
-    )
-
-    if (txtId) await connection.confirmTransaction(txtId, 'confirmed')
+    this.addTransaction(transaction)
+    return this
   }
 
   async claimFunds(ah: AuctionHouse) {
