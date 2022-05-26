@@ -177,6 +177,12 @@ export interface NftFile {
   uri: String
 }
 
+interface AddressKeyType {
+  [address: string]: string
+}
+
+export type KeyType = AddressKeyType
+
 export interface Nft {
   name: string
   address: string
@@ -236,4 +242,52 @@ export interface TwitterProfile {
   profileImageUrl: string
   bannerImageUrl: string
   description: string
+}
+
+export interface NftCount {
+  total: number
+  listed: number
+}
+
+export interface NftOwner extends UserWallet {
+  associatedTokenAccountAddress: string
+  twitterHandle: string
+}
+export interface Wallet extends UserWallet {
+  nftCounts: WalletNftCount
+  connectionCounts: ConnectionCounts
+}
+
+export interface WalletNftCount {
+  owned: number
+  offered: number
+  listed: number
+}
+
+export interface ConnectionCounts {
+  fromCount: number
+  toCount: number
+}
+
+export interface PricePoint {
+  price: BN
+  date: string
+}
+
+export interface PriceChart {
+  listingFloor: PricePoint[]
+  salesAverage: PricePoint[]
+  totalVolume: PricePoint[]
+}
+
+export interface GetPriceChartData {
+  charts: PriceChart
+}
+
+export interface GetActivities {
+  activities: Activity[]
+}
+
+export interface GetNftData {
+  nft: Nft
 }
