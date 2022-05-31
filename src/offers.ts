@@ -1,4 +1,4 @@
-import { Client } from './client'
+import { Client, Tx } from './client'
 import { AuctionHouseProgram } from '@metaplex-foundation/mpl-auction-house'
 import {
   SYSVAR_INSTRUCTIONS_PUBKEY,
@@ -55,7 +55,7 @@ export class OffersClient extends Client {
     this.auctionHouse = auctionHouse
   }
 
-  async make({ amount, nft }: MakeOfferParams): Promise<OffersClient> {
+  async make({ amount, nft }: MakeOfferParams): Promise<Tx> {
     const { publicKey, signTransaction } = this.wallet
     const connection = this.connection
     const ah = this.auctionHouse
@@ -147,11 +147,10 @@ export class OffersClient extends Client {
       .add(publicBuyInstruction)
       .add(printBidReceiptInstruction)
 
-    this.addTransaction(txt)
-    return this
+    return txt
   }
 
-  async cancel({ nft, offer }: CancelOfferParams): Promise<OffersClient> {
+  async cancel({ nft, offer }: CancelOfferParams): Promise<Tx> {
     const ah = this.auctionHouse
     const { publicKey, signTransaction } = this.wallet
     const connection = this.connection
@@ -227,15 +226,10 @@ export class OffersClient extends Client {
       .add(cancelBidReceiptInstruction)
       .add(withdrawInstruction)
 
-    this.addTransaction(txt)
-    return this
+    return txt
   }
 
-  async accept({
-    offer,
-    nft,
-    cancel,
-  }: AcceptOfferParams): Promise<OffersClient> {
+  async accept({ offer, nft, cancel }: AcceptOfferParams): Promise<Tx> {
     const { publicKey, signTransaction } = this.wallet
     const connection = this.connection
     const ah = this.auctionHouse
@@ -446,7 +440,6 @@ export class OffersClient extends Client {
       })
     }
 
-    this.addTransaction(txt)
-    return this
+    return txt
   }
 }

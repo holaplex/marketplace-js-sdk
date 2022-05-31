@@ -3,12 +3,13 @@ import {
   PublicKey,
   Transaction,
   TransactionInstruction,
+  TransactionInstructionCtorFields,
 } from '@solana/web3.js'
 import { programs, Wallet } from '@metaplex/js'
 import { updateAuctionHouse } from './instructions'
 import { MarktplaceSettingsPayload, AuctionHouse } from './types'
 import ipfsSDK from './ipfs'
-import { Client } from './client'
+import { Client, Tx } from './client'
 import { OffersClient } from './offers'
 import { ListingsClient } from './listings'
 import { createWithdrawFromTreasuryInstruction } from '@metaplex-foundation/mpl-auction-house/dist/src/generated/instructions'
@@ -30,7 +31,7 @@ export class MarketplaceClient extends Client {
   async update(
     settings: MarktplaceSettingsPayload,
     transactionFee: number
-  ): Promise<MarketplaceClient> {
+  ): Promise<Tx[]> {
     const wallet = this.wallet
     const publicKey = wallet.publicKey as PublicKey
     const storePubkey = await Store.getPDA(publicKey)
@@ -70,8 +71,7 @@ export class MarketplaceClient extends Client {
     }
 
     transaction.add(setStorefrontV2Instructions)
-    this.addTransaction(transaction)
-    return this
+    return transaction
   }
 
   async claimFunds(ah: AuctionHouse) {

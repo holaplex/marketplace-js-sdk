@@ -7,7 +7,7 @@ import {
   TransactionInstruction,
 } from '@solana/web3.js'
 import { Wallet } from '@metaplex/js'
-import { Client } from './client'
+import { Client, Tx } from './client'
 import { AuctionHouse, Nft, Listing, Creator } from './types'
 
 const { instructions } = AuctionHouseProgram
@@ -51,11 +51,9 @@ export class ListingsClient extends Client {
     this.auctionHouse = auctionHouse
   }
 
-  async post({ amount, nft }: PostListingParams): Promise<ListingsClient> {
+  async post({ amount, nft }: PostListingParams): Promise<Tx> {
     const { publicKey, signTransaction } = this.wallet
-    const connection = this.connection
     const ah = this.auctionHouse
-
     const buyerPrice = amount
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
@@ -136,15 +134,12 @@ export class ListingsClient extends Client {
 
     txt.add(sellInstruction).add(printListingReceiptInstruction)
 
-    this.addTransaction(txt)
-    return this
+    return txt
   }
 
-  async cancel({ listing, nft }: CancelListingParams): Promise<ListingsClient> {
+  async cancel({ listing, nft }: CancelListingParams): Promise<Tx> {
     const { publicKey, signTransaction } = this.wallet
-    const connection = this.connection
     const ah = this.auctionHouse
-
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)
@@ -195,15 +190,12 @@ export class ListingsClient extends Client {
 
     txt.add(cancelInstruction).add(cancelListingReceiptInstruction)
 
-    this.addTransaction(txt)
-    return this
+    return txt
   }
 
-  async buy({ listing, nft }: BuyListingParams): Promise<ListingsClient> {
+  async buy({ listing, nft }: BuyListingParams): Promise<Tx> {
     const { publicKey, signTransaction } = this.wallet
-    const connection = this.connection
     const ah = this.auctionHouse
-
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)
@@ -365,7 +357,6 @@ export class ListingsClient extends Client {
       )
       .add(printPurchaseReceiptInstruction)
 
-    this.addTransaction(txt)
-    return this
+    return txt
   }
 }
