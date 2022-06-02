@@ -107,7 +107,7 @@ export interface MintStats {
   average: BN
   floor: BN
   mint: string
-  auctionHouse: string
+  auctionHouse: AuctionHouse
 }
 export interface Creator extends UserWallet {
   attributeGroups: AttributeGroup[]
@@ -140,7 +140,7 @@ export interface NftCreatorWallet extends UserWallet {
 
 export interface Listing {
   address: string
-  auctionHouse: string
+  auctionHouse: AuctionHouse
   bookkepper: string
   seller: string
   metadata: string
@@ -158,7 +158,7 @@ export interface Purchase {
   address: string
   buyer: string
   seller: string
-  auctionHouse: string
+  auctionHouse: AuctionHouse
   price: BN
   createdAt: string
 }
@@ -168,7 +168,7 @@ export interface Offer {
   buyer: string
   price: BN
   createdAt: string
-  auctionHouse: string
+  auctionHouse: AuctionHouse
   tradeState: string
 }
 
@@ -229,7 +229,7 @@ export enum ActivityType {
 export interface Activity {
   address: string
   metadata: string
-  auctionHouse: string
+  auctionHouse: AuctionHouse
   price: BN
   createdAt: string
   wallets: string[]

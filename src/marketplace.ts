@@ -1,10 +1,4 @@
-import {
-  Connection,
-  PublicKey,
-  Transaction,
-  TransactionInstruction,
-  TransactionInstructionCtorFields,
-} from '@solana/web3.js'
+import { Connection, PublicKey, Transaction } from '@solana/web3.js'
 import { programs, Wallet } from '@metaplex/js'
 import { updateAuctionHouse } from './instructions'
 import { MarktplaceSettingsPayload, AuctionHouse } from './types'
@@ -31,7 +25,7 @@ export class MarketplaceClient extends Client {
   async update(
     settings: MarktplaceSettingsPayload,
     transactionFee: number
-  ): Promise<Tx[]> {
+  ): Promise<Tx> {
     const wallet = this.wallet
     const publicKey = wallet.publicKey as PublicKey
     const storePubkey = await Store.getPDA(publicKey)
