@@ -68,8 +68,6 @@ export interface MarketplaceCreator {
   creatorAddress: string
   storeConfigAddress: string
   preview?: Nft[]
-  twitterHandle?: string
-  profile?: TwitterProfile | null
   nftCount?: number
 }
 
@@ -239,9 +237,15 @@ export interface Activity {
 
 export interface TwitterProfile {
   handle: string
-  profileImageUrl: string
-  bannerImageUrl: string
-  description: string
+  description?: string
+  walletAddress?: string
+  bannerImageUrl?: string
+  /**
+   * @deprecated
+   */
+  profileImageUrl?: string
+  profileImageUrlLowres?: string
+  profileImageUrlHighres?: string
 }
 
 export interface NftCount {
