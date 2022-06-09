@@ -57,7 +57,6 @@ export class OffersClient extends Client {
 
   async make({ amount, nft }: MakeOfferParams): Promise<Tx> {
     const { publicKey, signTransaction } = this.wallet
-    const connection = this.connection
     const ah = this.auctionHouse
     const buyerPrice = amount
     const auctionHouse = new PublicKey(ah.address)
@@ -153,7 +152,6 @@ export class OffersClient extends Client {
   async cancel({ nft, offer }: CancelOfferParams): Promise<Tx> {
     const ah = this.auctionHouse
     const { publicKey, signTransaction } = this.wallet
-    const connection = this.connection
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)
@@ -231,9 +229,7 @@ export class OffersClient extends Client {
 
   async accept({ offer, nft, cancel }: AcceptOfferParams): Promise<Tx> {
     const { publicKey, signTransaction } = this.wallet
-    const connection = this.connection
     const ah = this.auctionHouse
-
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)

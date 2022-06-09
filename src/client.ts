@@ -41,22 +41,21 @@ export abstract class Client {
     const connection = this.connection
 
     const transaction = new Transaction()
-    this._transactionBuilder.forEach((instruction) => {
-      Promise.resolve(instruction).then((ix) => {
-        transaction.add(ix)
+    Promise.all(this._transactionBuilder).then(async (txs) => {
+      txs.forEach((tx) => {
+        transaction.add(tx)
       })
+      transaction.feePayer = publicKey
+      transaction.recentBlockhash = (
+        await connection.getRecentBlockhash()
+      ).blockhash
+
+      const signedTransaction = await wallet.signTransaction(transaction)
+      const txtId = await connection.sendRawTransaction(
+        signedTransaction.serialize()
+      )
+
+      if (txtId) await connection.confirmTransaction(txtId, 'confirmed')
     })
-
-    transaction.feePayer = publicKey
-    transaction.recentBlockhash = (
-      await connection.getLatestBlockhash()
-    ).blockhash
-
-    const signedTransaction = await wallet.signTransaction(transaction)
-    const txtId = await connection.sendRawTransaction(
-      signedTransaction.serialize()
-    )
-
-    if (txtId) await connection.confirmTransaction(txtId, 'confirmed')
   }
 }
