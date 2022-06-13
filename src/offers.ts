@@ -31,7 +31,6 @@ export interface MakeOfferParams {
 }
 
 export interface CancelOfferParams {
-  amount: number
   offer: Offer
   nft: Nft
 }
