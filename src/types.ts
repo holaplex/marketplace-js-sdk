@@ -53,8 +53,7 @@ export interface Marketplace {
   description: string
   logoUrl: string
   bannerUrl: string
-  auctionHouses?: AuctionHouse[]
-  auctionHouse: AuctionHouse
+  auctionHouses: AuctionHouse[]
   ownerAddress: string
   creators?: MarketplaceCreator[]
   stats?: MarketplaceStats
