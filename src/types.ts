@@ -195,6 +195,9 @@ export interface Nft {
   offers?: Offer[]
   activities?: Activity[]
   files?: NftFile[]
+  category?: string
+  primarySaleHappened?: boolean
+  createdAt?: string
 }
 
 export interface AttributeFilter {
