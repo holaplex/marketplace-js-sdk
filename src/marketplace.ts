@@ -3,10 +3,12 @@ import { programs, Wallet } from '@metaplex/js'
 import { createAuctionHouse, updateAuctionHouse } from './instructions'
 import { MarktplaceSettingsPayload, AuctionHouse } from './types'
 import ipfsSDK from './ipfs'
-import { Client, Tx } from './client'
+import { Client } from './client'
 import { OffersClient } from './offers'
 import { ListingsClient } from './listings'
 import { createWithdrawFromTreasuryInstruction } from '@metaplex-foundation/mpl-auction-house/dist/src/generated/instructions'
+import { EscrowClient } from './escrow'
+import { PendingTransaction } from './transaction'
 
 const {
   metaplex: { Store, SetStoreV2, StoreConfig },
@@ -78,7 +80,7 @@ export class MarketplaceClient extends Client {
   async update(
     settings: MarktplaceSettingsPayload,
     transactionFee: number
-  ): Promise<Tx> {
+  ): Promise<PendingTransaction> {
     const wallet = this.wallet
     const publicKey = wallet.publicKey as PublicKey
     const storePubkey = await Store.getPDA(publicKey)
@@ -118,7 +120,7 @@ export class MarketplaceClient extends Client {
     }
 
     transaction.add(setStorefrontV2Instructions)
-    return transaction
+    return [transaction, []]
   }
 
   async claimFunds(ah: AuctionHouse) {
@@ -179,6 +181,10 @@ export class MarketplaceClient extends Client {
 
   listings(auctionHouse: AuctionHouse): ListingsClient {
     return new ListingsClient(this.connection, this.wallet, auctionHouse)
+  }
+
+  escrow(auctionHouse: AuctionHouse): EscrowClient {
+    return new EscrowClient(this.connection, this.wallet, auctionHouse)
   }
 }
 

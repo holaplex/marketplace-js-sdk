@@ -1,4 +1,4 @@
-import { Client, Tx } from './client'
+import { Client } from './client'
 import { AuctionHouseProgram } from '@metaplex-foundation/mpl-auction-house'
 import {
   SYSVAR_INSTRUCTIONS_PUBKEY,
@@ -6,18 +6,19 @@ import {
   Transaction,
   Connection,
   TransactionInstruction,
+  Keypair,
 } from '@solana/web3.js'
 import { AuctionHouse, Nft, Offer, Listing, Creator } from './types'
+import { TOKEN_PROGRAM_ID, NATIVE_MINT, Token, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { Wallet } from '@metaplex/js'
+import { PendingTransaction } from './transaction'
 
 const { instructions } = AuctionHouseProgram
 const {
-  createDepositInstruction,
   createPrintBidReceiptInstruction,
   createPublicBuyInstruction,
   createCancelBidReceiptInstruction,
   createCancelInstruction,
-  createWithdrawInstruction,
   createSellInstruction,
   createPrintListingReceiptInstruction,
   createExecuteSaleInstruction,
@@ -54,8 +55,8 @@ export class OffersClient extends Client {
     this.auctionHouse = auctionHouse
   }
 
-  async make({ amount, nft }: MakeOfferParams): Promise<Tx> {
-    const { publicKey, signTransaction } = this.wallet
+  async make({ amount, nft }: MakeOfferParams): Promise<PendingTransaction> {
+    const { publicKey } = this.wallet
     const ah = this.auctionHouse
     const buyerPrice = amount
     const auctionHouse = new PublicKey(ah.address)
@@ -65,6 +66,25 @@ export class OffersClient extends Client {
     const tokenMint = new PublicKey(nft.mintAddress)
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
     const metadata = new PublicKey(nft.address)
+    const isSplMint = !treasuryMint.equals(NATIVE_MINT)
+
+    let splTokenTransferAuthority = Keypair.generate()
+    let transferAuthority = publicKey
+    let paymentAccount = publicKey
+    let signers: Keypair[] = []
+
+    if (isSplMint) {
+      transferAuthority = splTokenTransferAuthority.publicKey
+      signers = [...signers, splTokenTransferAuthority]
+
+      const buyerAssociatedTokenAccount = await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
+        treasuryMint,
+        publicKey,
+      )
+      paymentAccount = buyerAssociatedTokenAccount
+    }
 
     const [escrowPaymentAccount, escrowPaymentBump] =
       await AuctionHouseProgram.findEscrowPaymentAccountAddress(
@@ -84,27 +104,7 @@ export class OffersClient extends Client {
 
     const txt = new Transaction()
 
-    const depositInstructionAccounts = {
-      wallet: publicKey,
-      paymentAccount: publicKey,
-      transferAuthority: publicKey,
-      treasuryMint,
-      escrowPaymentAccount,
-      authority,
-      auctionHouse,
-      auctionHouseFeeAccount,
-    }
-    const depositInstructionArgs = {
-      escrowPaymentBump,
-      amount: buyerPrice,
-    }
-
-    const depositInstruction = createDepositInstruction(
-      depositInstructionAccounts,
-      depositInstructionArgs
-    )
-
-    const publicBuyInstruction = createPublicBuyInstruction(
+    let publicBuyInstruction = createPublicBuyInstruction(
       {
         wallet: publicKey,
         paymentAccount: publicKey,
@@ -126,6 +126,16 @@ export class OffersClient extends Client {
       }
     )
 
+    if (isSplMint) {
+      publicBuyInstruction.keys.map((key) => {
+        if (key.pubkey.equals(transferAuthority)) {
+          key.isSigner = true
+        }
+
+        return key
+      })
+    }
+
     const [receipt, receiptBump] =
       await AuctionHouseProgram.findBidReceiptAddress(buyerTradeState)
 
@@ -140,15 +150,38 @@ export class OffersClient extends Client {
       }
     )
 
+    if (isSplMint) {
+      const createApproveInstruction = Token.createApproveInstruction(
+        TOKEN_PROGRAM_ID,
+        paymentAccount,
+        transferAuthority,
+        publicKey,
+        [],
+        amount,
+      )
+
+      txt.add(createApproveInstruction)
+    }
+
     txt
-      .add(depositInstruction)
       .add(publicBuyInstruction)
       .add(printBidReceiptInstruction)
 
-    return txt
+    if (isSplMint) {
+      const createRevokeInstruction = Token.createRevokeInstruction(
+        TOKEN_PROGRAM_ID,
+        paymentAccount,
+        publicKey,
+        [],
+      )
+
+      txt.add(createRevokeInstruction)
+    }
+
+    return [txt, signers]
   }
 
-  async cancel({ nft, offer }: CancelOfferParams): Promise<Tx> {
+  async cancel({ nft, offer }: CancelOfferParams): Promise<PendingTransaction> {
     const ah = this.auctionHouse
     const { publicKey, signTransaction } = this.wallet
     const auctionHouse = new PublicKey(ah.address)
@@ -158,14 +191,7 @@ export class OffersClient extends Client {
     const receipt = new PublicKey(offer.address)
     const buyerPrice = offer.price.toNumber()
     const tradeState = new PublicKey(offer.tradeState)
-    const treasuryMint = new PublicKey(ah.treasuryMint)
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
-
-    const [escrowPaymentAccount, escrowPaymentBump] =
-      await AuctionHouseProgram.findEscrowPaymentAccountAddress(
-        auctionHouse,
-        publicKey
-      )
 
     const txt = new Transaction()
 
@@ -198,36 +224,15 @@ export class OffersClient extends Client {
       cancelBidReceiptInstructionAccounts
     )
 
-    const withdrawInstructionAccounts = {
-      receiptAccount: publicKey,
-      wallet: publicKey,
-      escrowPaymentAccount,
-      auctionHouse,
-      authority,
-      treasuryMint,
-      auctionHouseFeeAccount,
-    }
-
-    const withdrawInstructionArgs = {
-      escrowPaymentBump,
-      amount: buyerPrice,
-    }
-
-    const withdrawInstruction = createWithdrawInstruction(
-      withdrawInstructionAccounts,
-      withdrawInstructionArgs
-    )
-
     txt
       .add(cancelBidInstruction)
       .add(cancelBidReceiptInstruction)
-      .add(withdrawInstruction)
 
-    return txt
+    return [txt, []]
   }
 
-  async accept({ offer, nft, cancel }: AcceptOfferParams): Promise<Tx> {
-    const { publicKey, signTransaction } = this.wallet
+  async accept({ offer, nft, cancel }: AcceptOfferParams): Promise<PendingTransaction> {
+    const { publicKey } = this.wallet
     const ah = this.auctionHouse
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
@@ -435,6 +440,6 @@ export class OffersClient extends Client {
       })
     }
 
-    return txt
+    return [txt, []]
   }
 }
