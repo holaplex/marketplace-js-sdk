@@ -8,10 +8,15 @@ import {
   AccountMeta,
 } from '@solana/web3.js'
 import { Wallet } from '@metaplex/js'
-import { ASSOCIATED_TOKEN_PROGRAM_ID, NATIVE_MINT, Token, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  NATIVE_MINT,
+  Token,
+  TOKEN_PROGRAM_ID,
+} from '@solana/spl-token'
 import { Client } from './client'
 import { PendingTransaction } from './transaction'
-import { AuctionHouse, Nft, Listing, Creator } from './types'
+import { AuctionHouse, Nft, AhListing, Creator } from './types'
 
 const { instructions } = AuctionHouseProgram
 
@@ -32,12 +37,12 @@ export interface PostListingParams {
 }
 
 export interface CancelListingParams {
-  listing: Listing
+  listing: AhListing
   nft: Nft
 }
 
 export interface BuyListingParams {
-  listing: Listing
+  listing: AhListing
   nft: Nft
 }
 
@@ -140,7 +145,10 @@ export class ListingsClient extends Client {
     return [txt, []]
   }
 
-  async cancel({ listing, nft }: CancelListingParams): Promise<PendingTransaction> {
+  async cancel({
+    listing,
+    nft,
+  }: CancelListingParams): Promise<PendingTransaction> {
     const { publicKey, signTransaction } = this.wallet
     const ah = this.auctionHouse
     const auctionHouse = new PublicKey(ah.address)
@@ -148,7 +156,7 @@ export class ListingsClient extends Client {
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)
     const tokenMint = new PublicKey(nft.mintAddress)
     const treasuryMint = new PublicKey(ah.treasuryMint)
-    const receipt = new PublicKey(listing.address)
+    const receipt = new PublicKey(listing.id)
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
 
     const buyerPrice = listing.price.toNumber()
@@ -206,7 +214,7 @@ export class ListingsClient extends Client {
     const seller = new PublicKey(listing.seller)
     const tokenMint = new PublicKey(nft.mintAddress)
     const auctionHouseTreasury = new PublicKey(ah.auctionHouseTreasury)
-    const listingReceipt = new PublicKey(listing.address)
+    const listingReceipt = new PublicKey(listing.id)
     const sellerTradeState = new PublicKey(listing.tradeState)
     const buyerPrice = listing.price.toNumber()
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
@@ -217,7 +225,7 @@ export class ListingsClient extends Client {
       ASSOCIATED_TOKEN_PROGRAM_ID,
       TOKEN_PROGRAM_ID,
       treasuryMint,
-      seller,
+      seller
     )
 
     if (isNative) {
@@ -340,7 +348,7 @@ export class ListingsClient extends Client {
       const creatorAtaAccount = {
         pubkey,
         isSigner: false,
-        isWritable: true
+        isWritable: true,
       }
 
       remainingAccounts = [...remainingAccounts, creatorAtaAccount]

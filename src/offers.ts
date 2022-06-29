@@ -8,8 +8,13 @@ import {
   TransactionInstruction,
   Keypair,
 } from '@solana/web3.js'
-import { AuctionHouse, Nft, Offer, Listing, Creator } from './types'
-import { TOKEN_PROGRAM_ID, NATIVE_MINT, Token, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { AuctionHouse, Nft, Offer, AhListing, Creator } from './types'
+import {
+  TOKEN_PROGRAM_ID,
+  NATIVE_MINT,
+  Token,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+} from '@solana/spl-token'
 import { Wallet } from '@metaplex/js'
 import { PendingTransaction } from './transaction'
 
@@ -39,7 +44,7 @@ export interface CancelOfferParams {
 export interface AcceptOfferParams {
   offer: Offer
   nft: Nft
-  cancel?: Listing[]
+  cancel?: AhListing[]
 }
 
 export class OffersClient extends Client {
@@ -81,7 +86,7 @@ export class OffersClient extends Client {
         ASSOCIATED_TOKEN_PROGRAM_ID,
         TOKEN_PROGRAM_ID,
         treasuryMint,
-        publicKey,
+        publicKey
       )
       paymentAccount = buyerAssociatedTokenAccount
     }
@@ -157,22 +162,20 @@ export class OffersClient extends Client {
         transferAuthority,
         publicKey,
         [],
-        amount,
+        amount
       )
 
       txt.add(createApproveInstruction)
     }
 
-    txt
-      .add(publicBuyInstruction)
-      .add(printBidReceiptInstruction)
+    txt.add(publicBuyInstruction).add(printBidReceiptInstruction)
 
     if (isSplMint) {
       const createRevokeInstruction = Token.createRevokeInstruction(
         TOKEN_PROGRAM_ID,
         paymentAccount,
         publicKey,
-        [],
+        []
       )
 
       txt.add(createRevokeInstruction)
@@ -188,7 +191,7 @@ export class OffersClient extends Client {
     const authority = new PublicKey(ah.authority)
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)
     const tokenMint = new PublicKey(nft.mintAddress)
-    const receipt = new PublicKey(offer.address)
+    const receipt = new PublicKey(offer.id)
     const buyerPrice = offer.price.toNumber()
     const tradeState = new PublicKey(offer.tradeState)
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
@@ -224,14 +227,16 @@ export class OffersClient extends Client {
       cancelBidReceiptInstructionAccounts
     )
 
-    txt
-      .add(cancelBidInstruction)
-      .add(cancelBidReceiptInstruction)
+    txt.add(cancelBidInstruction).add(cancelBidReceiptInstruction)
 
     return [txt, []]
   }
 
-  async accept({ offer, nft, cancel }: AcceptOfferParams): Promise<PendingTransaction> {
+  async accept({
+    offer,
+    nft,
+    cancel,
+  }: AcceptOfferParams): Promise<PendingTransaction> {
     const { publicKey } = this.wallet
     const ah = this.auctionHouse
     const auctionHouse = new PublicKey(ah.address)
@@ -241,7 +246,7 @@ export class OffersClient extends Client {
     const treasuryMint = new PublicKey(ah.treasuryMint)
     const auctionHouseTreasury = new PublicKey(ah.auctionHouseTreasury)
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
-    const bidReceipt = new PublicKey(offer.address)
+    const bidReceipt = new PublicKey(offer.id)
     const buyerPubkey = new PublicKey(offer.buyer)
     const metadata = new PublicKey(nft.address)
 

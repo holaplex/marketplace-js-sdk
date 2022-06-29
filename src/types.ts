@@ -1,6 +1,7 @@
 import BN from 'bn.js'
 
 export type Volume = number
+type Uuid = string
 
 interface MarketplaceStats {
   nfts: Volume
@@ -113,6 +114,7 @@ export interface Creator extends UserWallet {
 }
 
 export interface NftAttribute {
+  metadataAddress: string
   value: string
   traitType: string
 }
@@ -122,12 +124,7 @@ export interface UserWallet {
   profile?: TwitterProfile | null
 }
 
-export interface NftOwnerWallet extends UserWallet {
-  associatedTokenAccountAddress: string
-  twitterHandle?: string
-}
-
-export interface NftCreatorWallet extends UserWallet {
+export interface NftCreator extends UserWallet {
   twitterHandle?: string
   metadataAddress: string
   share: number
@@ -135,43 +132,53 @@ export interface NftCreatorWallet extends UserWallet {
   position: number
 }
 
-export interface Listing {
-  address: string
+export interface AhListing {
+  id: Uuid
+  tradeState: string
   auctionHouse: AuctionHouse
-  bookkepper: string
   seller: string
   metadata: string
-  purchaseReceipt: string
+  purchaseId: string
   price: BN
   tokenSize: number
-  bump: number
-  tradeState: string
   tradeStateBump: number
   createdAt: string
   canceledAt: string
+  nft: Nft
 }
 
 export interface Purchase {
-  address: string
+  id: Uuid
   buyer: string
   seller: string
   auctionHouse: AuctionHouse
+  metadata: string
   price: BN
   createdAt: string
+  tokenSize: number
+  nft: Nft
 }
 
 export interface Offer {
-  address: string
-  buyer: string
-  price: BN
-  createdAt: string
-  auctionHouse: AuctionHouse
+  id: Uuid
   tradeState: string
+  buyer: string
+  metadata: string
+  auctionHouse: AuctionHouse
+  price: BN
+  purchaseId: Uuid
+  tradeStateBump: number
+  tokenAccount: string
+  createdAt: string
+  canceledAt: string
+  tokenSize: number
+  nft: Nft
 }
 
 export interface NftFile {
-  fileType: String
-  uri: String
+  metadataAddress: string
+  fileType: string
+  uri: string
 }
 
 interface AddressKeyType {
@@ -181,22 +188,24 @@ interface AddressKeyType {
 export type KeyType = AddressKeyType
 
 export interface Nft {
-  name: string
   address: string
-  description?: string
-  image?: string
-  sellerFeeBasisPoints?: number
+  name: string
+  sellerFeeBasisPoints: number
   mintAddress: string
+  primarySaleHappened: boolean
+  updateAuthorityAddress: string
+  description: string
+  category: string
+  image: string
+  creators: NftCreator[]
   attributes?: NftAttribute[]
-  creators: UserWallet[]
-  owner: NftOwnerWallet
-  listings?: Listing[]
+  owner: NftOwner
+  activities?: Activity[]
+  listings?: AhListing[]
   purchases?: Purchase[]
   offers?: Offer[]
-  activities?: Activity[]
   files?: NftFile[]
-  category?: string
-  primarySaleHappened?: boolean
+  collection?: Nft
   createdAt?: string
 }
 
