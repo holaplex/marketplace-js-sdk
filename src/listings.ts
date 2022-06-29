@@ -8,7 +8,7 @@ import {
 } from "@solana/web3.js";
 import { Wallet } from "@metaplex/js";
 import { Client } from "./client";
-import { AuctionHouse, Nft, Listing, Creator } from "./types";
+import { AuctionHouse, Nft, AhListing, NftCreator } from "./types";
 
 const { instructions } = AuctionHouseProgram;
 
@@ -29,12 +29,12 @@ export interface PostListingParams {
 }
 
 export interface CancelListingParams {
-  listing: Listing;
+  listing: AhListing;
   nft: Nft;
 }
 
 export interface BuyListingParams {
-  listing: Listing;
+  listing: AhListing;
   nft: Nft;
 }
 
@@ -156,7 +156,7 @@ export class ListingsClient extends Client {
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount);
     const tokenMint = new PublicKey(nft.mintAddress);
     const treasuryMint = new PublicKey(ah.treasuryMint);
-    const receipt = new PublicKey(listing.address);
+    const receipt = new PublicKey(listing.id);
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress);
 
     const buyerPrice = listing.price.toNumber();
@@ -222,7 +222,7 @@ export class ListingsClient extends Client {
     const seller = new PublicKey(listing.seller);
     const tokenMint = new PublicKey(nft.mintAddress);
     const auctionHouseTreasury = new PublicKey(ah.auctionHouseTreasury);
-    const listingReceipt = new PublicKey(listing.address);
+    const listingReceipt = new PublicKey(listing.id);
     const sellerPaymentReceiptAccount = new PublicKey(listing.seller);
     const sellerTradeState = new PublicKey(listing.tradeState);
     const buyerPrice = listing.price.toNumber();
@@ -366,7 +366,7 @@ export class ListingsClient extends Client {
           programId: AuctionHouseProgram.PUBKEY,
           data: executeSaleInstruction.data,
           keys: executeSaleInstruction.keys.concat(
-            nft.creators.map((creator: Creator) => ({
+            nft.creators.map((creator: NftCreator) => ({
               pubkey: new PublicKey(creator.address),
               isSigner: false,
               isWritable: true,

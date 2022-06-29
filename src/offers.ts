@@ -7,7 +7,7 @@ import {
   Connection,
   TransactionInstruction,
 } from "@solana/web3.js";
-import { AuctionHouse, Nft, Offer, Listing, Creator } from "./types";
+import { AuctionHouse, Nft, Offer, AhListing, NftCreator } from "./types";
 import { Wallet } from "@metaplex/js";
 
 const { instructions } = AuctionHouseProgram;
@@ -39,7 +39,7 @@ export interface CancelOfferParams {
 export interface AcceptOfferParams {
   offer: Offer;
   nft: Nft;
-  cancel?: Listing[];
+  cancel?: AhListing[];
 }
 
 export class OffersClient extends Client {
@@ -165,7 +165,7 @@ export class OffersClient extends Client {
     const authority = new PublicKey(ah.authority);
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount);
     const tokenMint = new PublicKey(nft.mintAddress);
-    const receipt = new PublicKey(offer.address);
+    const receipt = new PublicKey(offer.id);
     const buyerPrice = offer.price.toNumber();
     const tradeState = new PublicKey(offer.tradeState);
     const treasuryMint = new PublicKey(ah.treasuryMint);
@@ -255,7 +255,7 @@ export class OffersClient extends Client {
     const treasuryMint = new PublicKey(ah.treasuryMint);
     const auctionHouseTreasury = new PublicKey(ah.auctionHouseTreasury);
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress);
-    const bidReceipt = new PublicKey(offer.address);
+    const bidReceipt = new PublicKey(offer.id);
     const buyerPubkey = new PublicKey(offer.buyer);
     const metadata = new PublicKey(nft.address);
 
@@ -411,7 +411,7 @@ export class OffersClient extends Client {
           programId: AuctionHouseProgram.PUBKEY,
           data: executeSaleInstruction.data,
           keys: executeSaleInstruction.keys.concat(
-            nft.creators.map((creator: Creator) => ({
+            nft.creators.map((creator: NftCreator) => ({
               pubkey: new PublicKey(creator.address),
               isSigner: false,
               isWritable: true,
@@ -438,7 +438,7 @@ export class OffersClient extends Client {
         };
 
         const cancelListingReceiptAccounts = {
-          receipt: new PublicKey(listing.address),
+          receipt: new PublicKey(listing.id),
           instruction: SYSVAR_INSTRUCTIONS_PUBKEY,
         };
 
