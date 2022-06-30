@@ -4,7 +4,7 @@ import {
   Transaction,
   TransactionInstruction,
   TransactionInstructionCtorFields,
-  Keypair
+  Keypair,
 } from '@solana/web3.js'
 import { Wallet } from '@metaplex/js'
 
@@ -43,10 +43,10 @@ export class TransactionBuilder {
 
       transaction.add(tx)
     })
-    
+
     transaction.feePayer = publicKey
-    const recentBlockhash = await connection.getRecentBlockhash()
-    
+    const recentBlockhash = await connection.getLatestBlockhash()
+
     transaction.recentBlockhash = recentBlockhash.blockhash
 
     const signerPubKeys = signers.map((signer) => signer.publicKey)
@@ -55,7 +55,7 @@ export class TransactionBuilder {
     if (signers.length > 0) {
       transaction.partialSign(...signers)
     }
-  
+
     const signedTransaction = await wallet.signTransaction(transaction)
     const txtId = await connection.sendRawTransaction(
       signedTransaction.serialize()
@@ -63,5 +63,4 @@ export class TransactionBuilder {
 
     if (txtId) await connection.confirmTransaction(txtId, 'confirmed')
   }
-
 }

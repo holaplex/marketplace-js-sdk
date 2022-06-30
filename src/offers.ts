@@ -8,7 +8,7 @@ import {
   TransactionInstruction,
   Keypair,
 } from '@solana/web3.js'
-import { AuctionHouse, Nft, Offer, AhListing, Creator } from './types'
+import { AuctionHouse, Nft, Offer, AhListing, NftCreator } from './types'
 import {
   TOKEN_PROGRAM_ID,
   NATIVE_MINT,
@@ -402,7 +402,7 @@ export class OffersClient extends Client {
           programId: AuctionHouseProgram.PUBKEY,
           data: executeSaleInstruction.data,
           keys: executeSaleInstruction.keys.concat(
-            nft.creators.map((creator: Creator) => ({
+            nft.creators.map((creator: NftCreator) => ({
               pubkey: new PublicKey(creator.address),
               isSigner: false,
               isWritable: true,
@@ -429,7 +429,7 @@ export class OffersClient extends Client {
         }
 
         const cancelListingReceiptAccounts = {
-          receipt: new PublicKey(listing.address),
+          receipt: new PublicKey(listing.id),
           instruction: SYSVAR_INSTRUCTIONS_PUBKEY,
         }
 
