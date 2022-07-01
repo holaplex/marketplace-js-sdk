@@ -16,15 +16,13 @@ import {
 } from '@solana/spl-token'
 import { Client } from './client'
 import { PendingTransaction } from './transaction'
-import { AuctionHouse, Nft, AhListing, Creator } from './types'
+import { AuctionHouse, Nft, AhListing } from './types'
 
 const { instructions } = AuctionHouseProgram
 
 const {
   createSellInstruction,
   createPrintListingReceiptInstruction,
-  createPublicBuyInstruction,
-  createPrintBidReceiptInstruction,
   createExecuteSaleInstruction,
   createPrintPurchaseReceiptInstruction,
   createCancelInstruction,
@@ -60,7 +58,7 @@ export class ListingsClient extends Client {
   }
 
   async post({ amount, nft }: PostListingParams): Promise<PendingTransaction> {
-    const { publicKey, signTransaction } = this.wallet
+    const { publicKey } = this.wallet
     const ah = this.auctionHouse
     const buyerPrice = amount
     const auctionHouse = new PublicKey(ah.address)
@@ -149,14 +147,13 @@ export class ListingsClient extends Client {
     listing,
     nft,
   }: CancelListingParams): Promise<PendingTransaction> {
-    const { publicKey, signTransaction } = this.wallet
+    const { publicKey } = this.wallet
     const ah = this.auctionHouse
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)
     const tokenMint = new PublicKey(nft.mintAddress)
     const treasuryMint = new PublicKey(ah.treasuryMint)
-    const receipt = new PublicKey(listing.id)
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
 
     const buyerPrice = listing.price.toNumber()
@@ -170,6 +167,11 @@ export class ListingsClient extends Client {
       buyerPrice,
       1
     )
+
+    const [listingReceipt, _listingReceiptBump] =
+      await AuctionHouseProgram.findListingReceiptAddress(
+        new PublicKey(listing.tradeState)
+      )
 
     const cancelInstructionAccounts = {
       wallet: publicKey,
@@ -186,7 +188,7 @@ export class ListingsClient extends Client {
     }
 
     const cancelListingReceiptAccounts = {
-      receipt,
+      receipt: listingReceipt,
       instruction: SYSVAR_INSTRUCTIONS_PUBKEY,
     }
 
@@ -214,12 +216,16 @@ export class ListingsClient extends Client {
     const seller = new PublicKey(listing.seller)
     const tokenMint = new PublicKey(nft.mintAddress)
     const auctionHouseTreasury = new PublicKey(ah.auctionHouseTreasury)
-    const listingReceipt = new PublicKey(listing.id)
     const sellerTradeState = new PublicKey(listing.tradeState)
     const buyerPrice = listing.price.toNumber()
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
     const metadata = new PublicKey(nft.address)
     const isNative = treasuryMint.equals(NATIVE_MINT)
+
+    const [listingReceipt, _listingReceiptBump] =
+      await AuctionHouseProgram.findListingReceiptAddress(
+        new PublicKey(listing.tradeState)
+      )
 
     let sellerPaymentReceiptAccount = await Token.getAssociatedTokenAddress(
       ASSOCIATED_TOKEN_PROGRAM_ID,

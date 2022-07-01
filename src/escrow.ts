@@ -1,21 +1,18 @@
 import { Client } from './client'
 import { AuctionHouseProgram } from '@metaplex-foundation/mpl-auction-house'
-import {
-  PublicKey,
-  Transaction,
-  Connection,
-  Keypair,
-} from '@solana/web3.js'
+import { PublicKey, Transaction, Connection, Keypair } from '@solana/web3.js'
 import { AuctionHouse } from './types'
-import { TOKEN_PROGRAM_ID, NATIVE_MINT, Token, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import {
+  TOKEN_PROGRAM_ID,
+  NATIVE_MINT,
+  Token,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+} from '@solana/spl-token'
 import { Wallet } from '@metaplex/js'
 import { PendingTransaction } from './transaction'
 
 const { instructions } = AuctionHouseProgram
-const {
-  createDepositInstruction,
-  createWithdrawInstruction
-} = instructions
+const { createDepositInstruction, createWithdrawInstruction } = instructions
 
 export interface DepositParams {
   amount: number
@@ -60,7 +57,7 @@ export class EscrowClient extends Client {
         ASSOCIATED_TOKEN_PROGRAM_ID,
         TOKEN_PROGRAM_ID,
         treasuryMint,
-        publicKey,
+        publicKey
       )
       paymentAccount = buyerAssociatedTokenAccount
     }
@@ -100,7 +97,7 @@ export class EscrowClient extends Client {
         transferAuthority,
         publicKey,
         [],
-        amount,
+        amount
       )
 
       txt.add(createApproveInstruction)
@@ -130,9 +127,9 @@ export class EscrowClient extends Client {
     return [txt, signatures]
   }
 
-  async withdraw({ amount }): Promise<PendingTransaction> {
+  async withdraw({ amount }: WithdrawParams): Promise<PendingTransaction> {
     const ah = this.auctionHouse
-    const { publicKey, signTransaction } = this.wallet
+    const { publicKey } = this.wallet
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)
@@ -143,7 +140,7 @@ export class EscrowClient extends Client {
       ASSOCIATED_TOKEN_PROGRAM_ID,
       TOKEN_PROGRAM_ID,
       treasuryMint,
-      publicKey,
+      publicKey
     )
 
     let receiptAccount = publicKey
@@ -169,7 +166,6 @@ export class EscrowClient extends Client {
       treasuryMint,
       auctionHouseFeeAccount,
     }
-
     const withdrawInstructionArgs = {
       escrowPaymentBump,
       amount,
