@@ -1,6 +1,6 @@
 {
   "name": "@holaplex/marketplace-js-sdk",
-  "version": "0.2.2",
+  "version": "0.2.5",
   "description": "Holaplex Marketplace Standard Actions for the Metaplex Auction House program",
   "types": "dist/index.d.ts",
   "main": "dist/index.js",
