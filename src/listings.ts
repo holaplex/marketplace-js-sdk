@@ -150,15 +150,12 @@ export class ListingsClient extends Client {
     const { publicKey, signTransaction } = this.wallet
     const connection = this.connection
     const ah = this.auctionHouse
-
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)
     const tokenMint = new PublicKey(nft.mintAddress)
     const treasuryMint = new PublicKey(ah.treasuryMint)
-    const receipt = new PublicKey(listing.id)
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
-
     const buyerPrice = listing.price.toNumber()
 
     const [tradeState] = await AuctionHouseProgram.findTradeStateAddress(
@@ -170,6 +167,11 @@ export class ListingsClient extends Client {
       buyerPrice,
       1
     )
+
+    const [listingReceipt, _listingReceiptBump] =
+      await AuctionHouseProgram.findListingReceiptAddress(
+        new PublicKey(listing.tradeState)
+      )
 
     const cancelInstructionAccounts = {
       wallet: publicKey,
@@ -186,7 +188,7 @@ export class ListingsClient extends Client {
     }
 
     const cancelListingReceiptAccounts = {
-      receipt,
+      receipt: listingReceipt,
       instruction: SYSVAR_INSTRUCTIONS_PUBKEY,
     }
 
@@ -222,12 +224,16 @@ export class ListingsClient extends Client {
     const seller = new PublicKey(listing.seller)
     const tokenMint = new PublicKey(nft.mintAddress)
     const auctionHouseTreasury = new PublicKey(ah.auctionHouseTreasury)
-    const listingReceipt = new PublicKey(listing.id)
     const sellerPaymentReceiptAccount = new PublicKey(listing.seller)
     const sellerTradeState = new PublicKey(listing.tradeState)
     const buyerPrice = listing.price.toNumber()
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
     const metadata = new PublicKey(nft.address)
+
+    const [listingReceipt, _listingReceiptBump] =
+      await AuctionHouseProgram.findListingReceiptAddress(
+        new PublicKey(listing.tradeState)
+      )
 
     const [escrowPaymentAccount, escrowPaymentBump] =
       await AuctionHouseProgram.findEscrowPaymentAccountAddress(

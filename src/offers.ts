@@ -165,11 +165,13 @@ export class OffersClient extends Client {
     const authority = new PublicKey(ah.authority)
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)
     const tokenMint = new PublicKey(nft.mintAddress)
-    const receipt = new PublicKey(offer.id)
     const buyerPrice = offer.price.toNumber()
     const tradeState = new PublicKey(offer.tradeState)
     const treasuryMint = new PublicKey(ah.treasuryMint)
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
+
+    const [bidReceipt, _bidReceiptBump] =
+      await AuctionHouseProgram.findBidReceiptAddress(tradeState)
 
     const [escrowPaymentAccount, escrowPaymentBump] =
       await AuctionHouseProgram.findEscrowPaymentAccountAddress(
@@ -195,7 +197,7 @@ export class OffersClient extends Client {
     }
 
     const cancelBidReceiptInstructionAccounts = {
-      receipt: receipt,
+      receipt: bidReceipt,
       instruction: SYSVAR_INSTRUCTIONS_PUBKEY,
     }
 
@@ -247,7 +249,6 @@ export class OffersClient extends Client {
     const { publicKey, signTransaction } = this.wallet
     const connection = this.connection
     const ah = this.auctionHouse
-
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)
@@ -255,9 +256,13 @@ export class OffersClient extends Client {
     const treasuryMint = new PublicKey(ah.treasuryMint)
     const auctionHouseTreasury = new PublicKey(ah.auctionHouseTreasury)
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
-    const bidReceipt = new PublicKey(offer.id)
     const buyerPubkey = new PublicKey(offer.buyer)
     const metadata = new PublicKey(nft.address)
+
+    const [bidReceipt, _bidReceiptBump] =
+      await AuctionHouseProgram.findBidReceiptAddress(
+        new PublicKey(offer.tradeState)
+      )
 
     const [sellerTradeState, sellerTradeStateBump] =
       await AuctionHouseProgram.findTradeStateAddress(
@@ -438,7 +443,7 @@ export class OffersClient extends Client {
         }
 
         const cancelListingReceiptAccounts = {
-          receipt: new PublicKey(listing.id),
+          receipt: bidReceipt,
           instruction: SYSVAR_INSTRUCTIONS_PUBKEY,
         }
 
