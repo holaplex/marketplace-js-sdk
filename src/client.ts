@@ -1,6 +1,4 @@
-import {
-  Connection,
-} from '@solana/web3.js'
+import { Connection } from '@solana/web3.js'
 import { Wallet } from '@metaplex/js'
 
 export abstract class Client {
@@ -10,5 +8,5 @@ export abstract class Client {
   constructor(connection: Connection, wallet: Wallet) {
     this.connection = connection
     this.wallet = wallet
-  }  
+  }
 }

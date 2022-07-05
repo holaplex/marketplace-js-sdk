@@ -1,6 +1,7 @@
 import BN from 'bn.js'
 
 export type Volume = number
+type Uuid = string
 
 interface MarketplaceStats {
   nfts: Volume
@@ -101,8 +102,7 @@ export interface MintStats {
   mint: string
   auctionHouse: string
 }
-export interface Creator {
-  address: string
+export interface Creator extends UserWallet {
   attributeGroups: AttributeGroup[]
   stats: MintStats[]
   counts: CreatorCounts
@@ -115,61 +115,91 @@ export interface NftAttribute {
 
 export interface UserWallet {
   address: string
+  profile?: TwitterProfile | null
 }
 
-export interface NftOwnerWallet extends UserWallet {
-  address: string
+export interface NftOwner extends UserWallet {
   associatedTokenAccountAddress: string
+  twitterHandle: string
 }
 
-export interface Listing {
-  address: string
+export interface NftCreator extends UserWallet {
+  twitterHandle?: string
+  metadataAddress: string
+  share: number
+  verified: boolean
+  position: number
+}
+
+export interface AhListing {
+  id: Uuid
+  tradeState: string
   auctionHouse: string
-  bookkepper: string
   seller: string
   metadata: string
-  purchaseReceipt: string
+  purchaseId: string
   price: BN
   tokenSize: number
-  bump: number
-  tradeState: string
   tradeStateBump: number
   createdAt: string
   canceledAt: string
+  nft: Nft
 }
 
 export interface Purchase {
-  address: string
+  id: Uuid
   buyer: string
   seller: string
   auctionHouse: string
+  metadata: string
   price: BN
   createdAt: string
+  tokenSize: number
+  nft: Nft
 }
 
 export interface Offer {
-  address: string
-  buyer: string
-  price: BN
-  createdAt: string
-  auctionHouse: string
+  id: Uuid
   tradeState: string
+  buyer: string
+  metadata: string
+  auctionHouse: string
+  price: BN
+  purchaseId: Uuid
+  tradeStateBump: number
+  tokenAccount: string
+  createdAt: string
+  canceledAt: string
+  tokenSize: number
+  nft: Nft
+}
+
+export interface NftFile {
+  metadataAddress: string
+  fileType: string
+  uri: string
 }
 
 export interface Nft {
-  name: string
   address: string
-  description?: string
-  image?: string
-  sellerFeeBasisPoints?: number
+  name: string
+  sellerFeeBasisPoints: number
   mintAddress: string
+  primarySaleHappened: boolean
+  updateAuthorityAddress: string
+  description: string
+  category: string
+  image: string
+  creators: NftCreator[]
   attributes?: NftAttribute[]
-  creators: UserWallet[]
-  owner: NftOwnerWallet
-  listings?: Listing[]
+  owner: NftOwner
+  activities?: Activity[]
+  listings?: AhListing[]
   purchases?: Purchase[]
   offers?: Offer[]
-  activities?: Activity[]
+  files?: NftFile[]
+  collection?: Nft
+  createdAt?: string
 }
 
 export interface AttributeFilter {
@@ -206,4 +236,17 @@ export interface Activity {
   createdAt: string
   wallets: string[]
   activityType: string
+}
+
+export interface TwitterProfile {
+  handle: string
+  description?: string
+  walletAddress?: string
+  bannerImageUrl?: string
+  /**
+   * @deprecated
+   */
+  profileImageUrl?: string
+  profileImageUrlLowres?: string
+  profileImageUrlHighres?: string
 }
