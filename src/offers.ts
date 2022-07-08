@@ -7,8 +7,9 @@ import {
   Connection,
   TransactionInstruction,
   Keypair,
+  AccountMeta,
 } from '@solana/web3.js'
-import { AuctionHouse, Nft, Offer, AhListing, NftCreator } from './types'
+import { AuctionHouse, Nft, Offer } from './types'
 import {
   TOKEN_PROGRAM_ID,
   NATIVE_MINT,
@@ -28,7 +29,6 @@ const {
   createPrintListingReceiptInstruction,
   createExecuteSaleInstruction,
   createPrintPurchaseReceiptInstruction,
-  createCancelListingReceiptInstruction,
 } = instructions
 
 export interface MakeOfferParams {
@@ -44,7 +44,6 @@ export interface CancelOfferParams {
 export interface AcceptOfferParams {
   offer: Offer
   nft: Nft
-  cancel?: AhListing[]
 }
 
 export class OffersClient extends Client {
@@ -237,7 +236,6 @@ export class OffersClient extends Client {
   async accept({
     offer,
     nft,
-    cancel,
   }: AcceptOfferParams): Promise<PendingTransaction> {
     const { publicKey } = this.wallet
     const ah = this.auctionHouse
@@ -250,6 +248,19 @@ export class OffersClient extends Client {
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
     const buyerPubkey = new PublicKey(offer.buyer)
     const metadata = new PublicKey(nft.address)
+
+    const isNative = treasuryMint.equals(NATIVE_MINT)
+
+    let sellerPaymentReceiptAccount = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      treasuryMint,
+      publicKey
+    )
+
+    if (isNative) {
+      sellerPaymentReceiptAccount = publicKey
+    }
 
     const [bidReceipt, _bidReceiptBump] =
       await AuctionHouseProgram.findBidReceiptAddress(
@@ -354,7 +365,7 @@ export class OffersClient extends Client {
       sellerTradeState,
       buyerTradeState,
       freeTradeState,
-      sellerPaymentReceiptAccount: publicKey,
+      sellerPaymentReceiptAccount,
       escrowPaymentAccount,
       buyerReceiptTokenAccount,
       auctionHouseFeeAccount,
@@ -400,6 +411,36 @@ export class OffersClient extends Client {
 
     const txt = new Transaction()
 
+    let remainingAccounts: AccountMeta[] = []
+
+    for (let creator of nft.creators) {
+      const creatorAccount = {
+        pubkey: new PublicKey(creator.address),
+        isSigner: false,
+        isWritable: true,
+      }
+      remainingAccounts = [...remainingAccounts, creatorAccount]
+
+      if (isNative) {
+        continue
+      }
+
+      const pubkey = await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
+        treasuryMint,
+        creatorAccount.pubkey
+      )
+
+      const creatorAtaAccount = {
+        pubkey,
+        isSigner: false,
+        isWritable: true,
+      }
+
+      remainingAccounts = [...remainingAccounts, creatorAtaAccount]
+    }
+
     txt
       .add(createListingInstruction)
       .add(createPrintListingInstruction)
@@ -407,49 +448,10 @@ export class OffersClient extends Client {
         new TransactionInstruction({
           programId: AuctionHouseProgram.PUBKEY,
           data: executeSaleInstruction.data,
-          keys: executeSaleInstruction.keys.concat(
-            nft.creators.map((creator: NftCreator) => ({
-              pubkey: new PublicKey(creator.address),
-              isSigner: false,
-              isWritable: true,
-            }))
-          ),
+          keys: executeSaleInstruction.keys.concat(remainingAccounts),
         })
       )
       .add(executePrintPurchaseReceiptInstruction)
-
-    if (cancel) {
-      cancel.forEach((listing) => {
-        const cancelInstructionAccounts = {
-          wallet: publicKey,
-          tokenAccount,
-          tokenMint,
-          authority,
-          auctionHouse,
-          auctionHouseFeeAccount,
-          tradeState: new PublicKey(listing.tradeState),
-        }
-        const cancelListingInstructionArgs = {
-          buyerPrice: listing.price,
-          tokenSize: 1,
-        }
-
-        const cancelListingReceiptAccounts = {
-          receipt: bidReceipt,
-          instruction: SYSVAR_INSTRUCTIONS_PUBKEY,
-        }
-
-        const cancelListingInstruction = createCancelInstruction(
-          cancelInstructionAccounts,
-          cancelListingInstructionArgs
-        )
-
-        const cancelListingReceiptInstruction =
-          createCancelListingReceiptInstruction(cancelListingReceiptAccounts)
-
-        txt.add(cancelListingInstruction).add(cancelListingReceiptInstruction)
-      })
-    }
 
     return [txt, []]
   }
