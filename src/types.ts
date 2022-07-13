@@ -135,28 +135,28 @@ export interface NftCreator extends UserWallet {
 export interface AhListing {
   id: Uuid
   tradeState: string
-  auctionHouse: AuctionHouse
+  auctionHouse?: AuctionHouse
   seller: string
   metadata: string
-  purchaseId: string
+  purchaseId?: string
   price: BN
   tokenSize: number
   tradeStateBump: number
   createdAt: string
-  canceledAt: string
-  nft: Nft
+  canceledAt?: string
+  nft?: Nft
 }
 
 export interface Purchase {
   id: Uuid
   buyer: string
   seller: string
-  auctionHouse: AuctionHouse
+  auctionHouse?: AuctionHouse
   metadata: string
   price: BN
   createdAt: string
   tokenSize: number
-  nft: Nft
+  nft?: Nft
 }
 
 export interface Offer {
@@ -164,15 +164,15 @@ export interface Offer {
   tradeState: string
   buyer: string
   metadata: string
-  auctionHouse: AuctionHouse
+  auctionHouse?: AuctionHouse
   price: BN
-  purchaseId: Uuid
+  purchaseId?: Uuid
   tradeStateBump: number
-  tokenAccount: string
+  tokenAccount?: string
   createdAt: string
-  canceledAt: string
+  canceledAt?: string
   tokenSize: number
-  nft: Nft
+  nft?: Nft
 }
 
 export interface NftFile {
