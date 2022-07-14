@@ -33,9 +33,11 @@ export interface MarketplaceCreatorPayload {
 
 export interface MarketplaceAddressPayload {
   owner?: string
-  auctionHouse: string
   store?: string
   storeConfig?: string
+}
+interface MarketplaceAuctionHousePayload {
+  address: string
 }
 export interface MarktplaceSettingsPayload {
   meta: MarktetplaceMetaPayload
@@ -43,6 +45,7 @@ export interface MarktplaceSettingsPayload {
   creators: MarketplaceCreatorPayload[]
   subdomain: string
   address: MarketplaceAddressPayload
+  auctionHouses: MarketplaceAuctionHousePayload[]
 }
 
 export interface Marketplace {
@@ -51,7 +54,7 @@ export interface Marketplace {
   description: string
   logoUrl: string
   bannerUrl: string
-  auctionHouse: AuctionHouse
+  auctionHouses?: AuctionHouse[]
   ownerAddress: string
   creators?: MarketplaceCreator[]
   stats?: MarketplaceStats
@@ -65,6 +68,9 @@ export interface MarketplaceCreator {
   creatorAddress: string
   storeConfigAddress: string
   preview?: Nft[]
+  twitterHandle?: string
+  profile?: TwitterProfile | null
+  nftCount?: number
 }
 
 export interface AuctionHouse {
@@ -97,6 +103,7 @@ export interface AttributeGroup {
 
 export interface MintStats {
   volume24hr: BN
+  volumeTotal: BN
   average: BN
   floor: BN
   mint: string
@@ -236,6 +243,7 @@ export interface Activity {
   createdAt: string
   wallets: string[]
   activityType: string
+  nft: Nft
 }
 
 export interface TwitterProfile {

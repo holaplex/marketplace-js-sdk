@@ -6,23 +6,29 @@ import {
   Transaction,
   Connection,
   TransactionInstruction,
+  Keypair,
+  AccountMeta,
 } from '@solana/web3.js'
-import { AuctionHouse, Nft, Offer, AhListing, NftCreator } from './types'
+import { AuctionHouse, Nft, Offer } from './types'
+import {
+  TOKEN_PROGRAM_ID,
+  NATIVE_MINT,
+  Token,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+} from '@solana/spl-token'
 import { Wallet } from '@metaplex/js'
+import { PendingTransaction } from './transaction'
 
 const { instructions } = AuctionHouseProgram
 const {
-  createDepositInstruction,
   createPrintBidReceiptInstruction,
   createPublicBuyInstruction,
   createCancelBidReceiptInstruction,
   createCancelInstruction,
-  createWithdrawInstruction,
   createSellInstruction,
   createPrintListingReceiptInstruction,
   createExecuteSaleInstruction,
   createPrintPurchaseReceiptInstruction,
-  createCancelListingReceiptInstruction,
 } = instructions
 
 export interface MakeOfferParams {
@@ -31,7 +37,6 @@ export interface MakeOfferParams {
 }
 
 export interface CancelOfferParams {
-  amount: number
   offer: Offer
   nft: Nft
 }
@@ -39,7 +44,6 @@ export interface CancelOfferParams {
 export interface AcceptOfferParams {
   offer: Offer
   nft: Nft
-  cancel?: AhListing[]
 }
 
 export class OffersClient extends Client {
@@ -55,9 +59,8 @@ export class OffersClient extends Client {
     this.auctionHouse = auctionHouse
   }
 
-  async make({ amount, nft }: MakeOfferParams) {
-    const { publicKey, signTransaction } = this.wallet
-    const connection = this.connection
+  async make({ amount, nft }: MakeOfferParams): Promise<PendingTransaction> {
+    const { publicKey } = this.wallet
     const ah = this.auctionHouse
     const buyerPrice = amount
     const auctionHouse = new PublicKey(ah.address)
@@ -67,6 +70,25 @@ export class OffersClient extends Client {
     const tokenMint = new PublicKey(nft.mintAddress)
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
     const metadata = new PublicKey(nft.address)
+    const isSplMint = !treasuryMint.equals(NATIVE_MINT)
+
+    let splTokenTransferAuthority = Keypair.generate()
+    let transferAuthority = publicKey
+    let paymentAccount = publicKey
+    let signers: Keypair[] = []
+
+    if (isSplMint) {
+      transferAuthority = splTokenTransferAuthority.publicKey
+      signers = [...signers, splTokenTransferAuthority]
+
+      const buyerAssociatedTokenAccount = await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
+        treasuryMint,
+        publicKey
+      )
+      paymentAccount = buyerAssociatedTokenAccount
+    }
 
     const [escrowPaymentAccount, escrowPaymentBump] =
       await AuctionHouseProgram.findEscrowPaymentAccountAddress(
@@ -86,27 +108,7 @@ export class OffersClient extends Client {
 
     const txt = new Transaction()
 
-    const depositInstructionAccounts = {
-      wallet: publicKey,
-      paymentAccount: publicKey,
-      transferAuthority: publicKey,
-      treasuryMint,
-      escrowPaymentAccount,
-      authority,
-      auctionHouse,
-      auctionHouseFeeAccount,
-    }
-    const depositInstructionArgs = {
-      escrowPaymentBump,
-      amount: buyerPrice,
-    }
-
-    const depositInstruction = createDepositInstruction(
-      depositInstructionAccounts,
-      depositInstructionArgs
-    )
-
-    const publicBuyInstruction = createPublicBuyInstruction(
+    let publicBuyInstruction = createPublicBuyInstruction(
       {
         wallet: publicKey,
         paymentAccount: publicKey,
@@ -128,6 +130,16 @@ export class OffersClient extends Client {
       }
     )
 
+    if (isSplMint) {
+      publicBuyInstruction.keys.map((key) => {
+        if (key.pubkey.equals(transferAuthority)) {
+          key.isSigner = true
+        }
+
+        return key
+      })
+    }
+
     const [receipt, receiptBump] =
       await AuctionHouseProgram.findBidReceiptAddress(buyerTradeState)
 
@@ -142,42 +154,48 @@ export class OffersClient extends Client {
       }
     )
 
-    txt
-      .add(depositInstruction)
-      .add(publicBuyInstruction)
-      .add(printBidReceiptInstruction)
+    if (isSplMint) {
+      const createApproveInstruction = Token.createApproveInstruction(
+        TOKEN_PROGRAM_ID,
+        paymentAccount,
+        transferAuthority,
+        publicKey,
+        [],
+        amount
+      )
 
-    txt.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
-    txt.feePayer = publicKey
+      txt.add(createApproveInstruction)
+    }
 
-    const signed = await signTransaction(txt)
+    txt.add(publicBuyInstruction).add(printBidReceiptInstruction)
 
-    const signature = await connection.sendRawTransaction(signed.serialize())
+    if (isSplMint) {
+      const createRevokeInstruction = Token.createRevokeInstruction(
+        TOKEN_PROGRAM_ID,
+        paymentAccount,
+        publicKey,
+        []
+      )
 
-    await connection.confirmTransaction(signature, 'confirmed')
+      txt.add(createRevokeInstruction)
+    }
+
+    return [txt, signers]
   }
 
-  async cancel({ nft, offer }: CancelOfferParams) {
+  async cancel({ nft, offer }: CancelOfferParams): Promise<PendingTransaction> {
     const ah = this.auctionHouse
-    const { publicKey, signTransaction } = this.wallet
-    const connection = this.connection
+    const { publicKey } = this.wallet
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)
     const tokenMint = new PublicKey(nft.mintAddress)
     const buyerPrice = offer.price.toNumber()
     const tradeState = new PublicKey(offer.tradeState)
-    const treasuryMint = new PublicKey(ah.treasuryMint)
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
 
     const [bidReceipt, _bidReceiptBump] =
       await AuctionHouseProgram.findBidReceiptAddress(tradeState)
-
-    const [escrowPaymentAccount, escrowPaymentBump] =
-      await AuctionHouseProgram.findEscrowPaymentAccountAddress(
-        auctionHouse,
-        publicKey
-      )
 
     const txt = new Transaction()
 
@@ -210,44 +228,16 @@ export class OffersClient extends Client {
       cancelBidReceiptInstructionAccounts
     )
 
-    const withdrawInstructionAccounts = {
-      receiptAccount: publicKey,
-      wallet: publicKey,
-      escrowPaymentAccount,
-      auctionHouse,
-      authority,
-      treasuryMint,
-      auctionHouseFeeAccount,
-    }
+    txt.add(cancelBidInstruction).add(cancelBidReceiptInstruction)
 
-    const withdrawInstructionArgs = {
-      escrowPaymentBump,
-      amount: buyerPrice,
-    }
-
-    const withdrawInstruction = createWithdrawInstruction(
-      withdrawInstructionAccounts,
-      withdrawInstructionArgs
-    )
-
-    txt
-      .add(cancelBidInstruction)
-      .add(cancelBidReceiptInstruction)
-      .add(withdrawInstruction)
-
-    txt.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
-    txt.feePayer = publicKey
-
-    const signed = await signTransaction(txt)
-
-    const signature = await connection.sendRawTransaction(signed.serialize())
-
-    await connection.confirmTransaction(signature, 'confirmed')
+    return [txt, []]
   }
 
-  async accept({ offer, nft, cancel }: AcceptOfferParams) {
-    const { publicKey, signTransaction } = this.wallet
-    const connection = this.connection
+  async accept({
+    offer,
+    nft,
+  }: AcceptOfferParams): Promise<PendingTransaction> {
+    const { publicKey } = this.wallet
     const ah = this.auctionHouse
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
@@ -258,6 +248,19 @@ export class OffersClient extends Client {
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
     const buyerPubkey = new PublicKey(offer.buyer)
     const metadata = new PublicKey(nft.address)
+
+    const isNative = treasuryMint.equals(NATIVE_MINT)
+
+    let sellerPaymentReceiptAccount = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      treasuryMint,
+      publicKey
+    )
+
+    if (isNative) {
+      sellerPaymentReceiptAccount = publicKey
+    }
 
     const [bidReceipt, _bidReceiptBump] =
       await AuctionHouseProgram.findBidReceiptAddress(
@@ -362,7 +365,7 @@ export class OffersClient extends Client {
       sellerTradeState,
       buyerTradeState,
       freeTradeState,
-      sellerPaymentReceiptAccount: publicKey,
+      sellerPaymentReceiptAccount,
       escrowPaymentAccount,
       buyerReceiptTokenAccount,
       auctionHouseFeeAccount,
@@ -408,6 +411,36 @@ export class OffersClient extends Client {
 
     const txt = new Transaction()
 
+    let remainingAccounts: AccountMeta[] = []
+
+    for (let creator of nft.creators) {
+      const creatorAccount = {
+        pubkey: new PublicKey(creator.address),
+        isSigner: false,
+        isWritable: true,
+      }
+      remainingAccounts = [...remainingAccounts, creatorAccount]
+
+      if (isNative) {
+        continue
+      }
+
+      const pubkey = await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
+        treasuryMint,
+        creatorAccount.pubkey
+      )
+
+      const creatorAtaAccount = {
+        pubkey,
+        isSigner: false,
+        isWritable: true,
+      }
+
+      remainingAccounts = [...remainingAccounts, creatorAtaAccount]
+    }
+
     txt
       .add(createListingInstruction)
       .add(createPrintListingInstruction)
@@ -415,57 +448,11 @@ export class OffersClient extends Client {
         new TransactionInstruction({
           programId: AuctionHouseProgram.PUBKEY,
           data: executeSaleInstruction.data,
-          keys: executeSaleInstruction.keys.concat(
-            nft.creators.map((creator: NftCreator) => ({
-              pubkey: new PublicKey(creator.address),
-              isSigner: false,
-              isWritable: true,
-            }))
-          ),
+          keys: executeSaleInstruction.keys.concat(remainingAccounts),
         })
       )
       .add(executePrintPurchaseReceiptInstruction)
 
-    if (cancel) {
-      cancel.forEach((listing) => {
-        const cancelInstructionAccounts = {
-          wallet: publicKey,
-          tokenAccount,
-          tokenMint,
-          authority,
-          auctionHouse,
-          auctionHouseFeeAccount,
-          tradeState: new PublicKey(listing.tradeState),
-        }
-        const cancelListingInstructionArgs = {
-          buyerPrice: listing.price,
-          tokenSize: 1,
-        }
-
-        const cancelListingReceiptAccounts = {
-          receipt: bidReceipt,
-          instruction: SYSVAR_INSTRUCTIONS_PUBKEY,
-        }
-
-        const cancelListingInstruction = createCancelInstruction(
-          cancelInstructionAccounts,
-          cancelListingInstructionArgs
-        )
-
-        const cancelListingReceiptInstruction =
-          createCancelListingReceiptInstruction(cancelListingReceiptAccounts)
-
-        txt.add(cancelListingInstruction).add(cancelListingReceiptInstruction)
-      })
-    }
-
-    txt.recentBlockhash = (await connection.getRecentBlockhash()).blockhash
-    txt.feePayer = publicKey
-
-    const signed = await signTransaction(txt)
-
-    const signature = await connection.sendRawTransaction(signed.serialize())
-
-    await connection.confirmTransaction(signature, 'confirmed')
+    return [txt, []]
   }
 }

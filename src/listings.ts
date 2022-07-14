@@ -5,18 +5,24 @@ import {
   Transaction,
   Connection,
   TransactionInstruction,
+  AccountMeta,
 } from '@solana/web3.js'
 import { Wallet } from '@metaplex/js'
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  NATIVE_MINT,
+  Token,
+  TOKEN_PROGRAM_ID,
+} from '@solana/spl-token'
 import { Client } from './client'
-import { AuctionHouse, Nft, AhListing, NftCreator } from './types'
+import { PendingTransaction } from './transaction'
+import { AuctionHouse, Nft, AhListing } from './types'
 
 const { instructions } = AuctionHouseProgram
 
 const {
   createSellInstruction,
   createPrintListingReceiptInstruction,
-  createPublicBuyInstruction,
-  createPrintBidReceiptInstruction,
   createExecuteSaleInstruction,
   createPrintPurchaseReceiptInstruction,
   createCancelInstruction,
@@ -51,11 +57,9 @@ export class ListingsClient extends Client {
     this.auctionHouse = auctionHouse
   }
 
-  async post({ amount, nft }: PostListingParams): Promise<void> {
-    const { publicKey, signTransaction } = this.wallet
-    const connection = this.connection
+  async post({ amount, nft }: PostListingParams): Promise<PendingTransaction> {
+    const { publicKey } = this.wallet
     const ah = this.auctionHouse
-
     const buyerPrice = amount
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
@@ -136,19 +140,14 @@ export class ListingsClient extends Client {
 
     txt.add(sellInstruction).add(printListingReceiptInstruction)
 
-    txt.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
-    txt.feePayer = publicKey
-
-    const signed = await signTransaction(txt)
-
-    const signature = await connection.sendRawTransaction(signed.serialize())
-
-    await connection.confirmTransaction(signature, 'confirmed')
+    return [txt, []]
   }
 
-  async cancel({ listing, nft }: CancelListingParams) {
-    const { publicKey, signTransaction } = this.wallet
-    const connection = this.connection
+  async cancel({
+    listing,
+    nft,
+  }: CancelListingParams): Promise<PendingTransaction> {
+    const { publicKey } = this.wallet
     const ah = this.auctionHouse
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
@@ -203,20 +202,12 @@ export class ListingsClient extends Client {
 
     txt.add(cancelInstruction).add(cancelListingReceiptInstruction)
 
-    txt.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
-    txt.feePayer = publicKey
-    const signed = await signTransaction(txt)
-
-    const signature = await connection.sendRawTransaction(signed.serialize())
-
-    await connection.confirmTransaction(signature, 'confirmed')
+    return [txt, []]
   }
 
-  async buy({ listing, nft }: BuyListingParams) {
-    const { publicKey, signTransaction } = this.wallet
-    const connection = this.connection
+  async buy({ listing, nft }: BuyListingParams): Promise<PendingTransaction> {
+    const { publicKey } = this.wallet
     const ah = this.auctionHouse
-
     const auctionHouse = new PublicKey(ah.address)
     const authority = new PublicKey(ah.authority)
     const auctionHouseFeeAccount = new PublicKey(ah.auctionHouseFeeAccount)
@@ -224,16 +215,27 @@ export class ListingsClient extends Client {
     const seller = new PublicKey(listing.seller)
     const tokenMint = new PublicKey(nft.mintAddress)
     const auctionHouseTreasury = new PublicKey(ah.auctionHouseTreasury)
-    const sellerPaymentReceiptAccount = new PublicKey(listing.seller)
     const sellerTradeState = new PublicKey(listing.tradeState)
     const buyerPrice = listing.price.toNumber()
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
     const metadata = new PublicKey(nft.address)
+    const isNative = treasuryMint.equals(NATIVE_MINT)
 
     const [listingReceipt, _listingReceiptBump] =
       await AuctionHouseProgram.findListingReceiptAddress(
         new PublicKey(listing.tradeState)
       )
+
+    let sellerPaymentReceiptAccount = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      treasuryMint,
+      seller
+    )
+
+    if (isNative) {
+      sellerPaymentReceiptAccount = seller
+    }
 
     const [escrowPaymentAccount, escrowPaymentBump] =
       await AuctionHouseProgram.findEscrowPaymentAccountAddress(
@@ -241,7 +243,7 @@ export class ListingsClient extends Client {
         publicKey
       )
 
-    const [buyerTradeState, tradeStateBump] =
+    const [buyerTradeState, _tradeStateBump] =
       await AuctionHouseProgram.findPublicBidTradeStateAddress(
         publicKey,
         auctionHouse,
@@ -268,33 +270,13 @@ export class ListingsClient extends Client {
         publicKey
       )
 
-    const [bidReceipt, bidReceiptBump] =
+    const [bidReceipt, _bidReceiptBump] =
       await AuctionHouseProgram.findBidReceiptAddress(buyerTradeState)
     const [purchaseReceipt, purchaseReceiptBump] =
       await AuctionHouseProgram.findPurchaseReceiptAddress(
         sellerTradeState,
         buyerTradeState
       )
-
-    const publicBuyInstructionAccounts = {
-      wallet: publicKey,
-      paymentAccount: publicKey,
-      transferAuthority: publicKey,
-      treasuryMint,
-      tokenAccount,
-      metadata,
-      escrowPaymentAccount,
-      authority,
-      auctionHouse,
-      auctionHouseFeeAccount,
-      buyerTradeState,
-    }
-    const publicBuyInstructionArgs = {
-      tradeStateBump,
-      escrowPaymentBump,
-      buyerPrice,
-      tokenSize: 1,
-    }
 
     const executeSaleInstructionAccounts = {
       buyer: publicKey,
@@ -324,15 +306,6 @@ export class ListingsClient extends Client {
       tokenSize: 1,
     }
 
-    const printBidReceiptAccounts = {
-      bookkeeper: publicKey,
-      receipt: bidReceipt,
-      instruction: SYSVAR_INSTRUCTIONS_PUBKEY,
-    }
-    const printBidReceiptArgs = {
-      receiptBump: bidReceiptBump,
-    }
-
     const printPurchaseReceiptAccounts = {
       bookkeeper: publicKey,
       purchaseReceipt,
@@ -344,14 +317,6 @@ export class ListingsClient extends Client {
       purchaseReceiptBump,
     }
 
-    const publicBuyInstruction = createPublicBuyInstruction(
-      publicBuyInstructionAccounts,
-      publicBuyInstructionArgs
-    )
-    const printBidReceiptInstruction = createPrintBidReceiptInstruction(
-      printBidReceiptAccounts,
-      printBidReceiptArgs
-    )
     const executeSaleInstruction = createExecuteSaleInstruction(
       executeSaleInstructionAccounts,
       executeSaleInstructionArgs
@@ -364,31 +329,46 @@ export class ListingsClient extends Client {
 
     const txt = new Transaction()
 
+    let remainingAccounts: AccountMeta[] = []
+
+    for (let creator of nft.creators) {
+      const creatorAccount = {
+        pubkey: new PublicKey(creator.address),
+        isSigner: false,
+        isWritable: true,
+      }
+      remainingAccounts = [...remainingAccounts, creatorAccount]
+
+      if (isNative) {
+        continue
+      }
+
+      const pubkey = await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
+        treasuryMint,
+        creatorAccount.pubkey
+      )
+
+      const creatorAtaAccount = {
+        pubkey,
+        isSigner: false,
+        isWritable: true,
+      }
+
+      remainingAccounts = [...remainingAccounts, creatorAtaAccount]
+    }
+
     txt
-      .add(publicBuyInstruction)
-      .add(printBidReceiptInstruction)
       .add(
         new TransactionInstruction({
           programId: AuctionHouseProgram.PUBKEY,
           data: executeSaleInstruction.data,
-          keys: executeSaleInstruction.keys.concat(
-            nft.creators.map((creator: NftCreator) => ({
-              pubkey: new PublicKey(creator.address),
-              isSigner: false,
-              isWritable: true,
-            }))
-          ),
+          keys: executeSaleInstruction.keys.concat(remainingAccounts),
         })
       )
       .add(printPurchaseReceiptInstruction)
 
-    txt.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
-    txt.feePayer = publicKey
-
-    const signed = await signTransaction(txt)
-
-    const signature = await connection.sendRawTransaction(signed.serialize())
-
-    await connection.confirmTransaction(signature, 'confirmed')
+    return [txt, []]
   }
 }
