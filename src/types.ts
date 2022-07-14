@@ -102,12 +102,12 @@ export interface AttributeGroup {
 }
 
 export interface MintStats {
-  volume24hr: BN
-  volumeTotal: BN
-  average: BN
-  floor: BN
+  volume24hr?: BN
+  volumeTotal?: BN
+  average?: BN
+  floor?: BN
   mint: string
-  auctionHouse: string
+  auctionHouse?: AuctionHouse
 }
 export interface Creator extends UserWallet {
   attributeGroups: AttributeGroup[]
@@ -141,10 +141,10 @@ export interface NftCreator extends UserWallet {
 export interface AhListing {
   id: Uuid
   tradeState: string
-  auctionHouse: string
+  auctionHouse: AuctionHouse
   seller: string
   metadata: string
-  purchaseId: string
+  purchaseId: Uuid
   price: BN
   tokenSize: number
   tradeStateBump: number
@@ -157,7 +157,7 @@ export interface Purchase {
   id: Uuid
   buyer: string
   seller: string
-  auctionHouse: string
+  auctionHouse: AuctionHouse
   metadata: string
   price: BN
   createdAt: string
@@ -170,7 +170,7 @@ export interface Offer {
   tradeState: string
   buyer: string
   metadata: string
-  auctionHouse: string
+  auctionHouse: AuctionHouse
   price: BN
   purchaseId: Uuid
   tradeStateBump: number
@@ -238,7 +238,7 @@ export enum ActivityType {
 export interface Activity {
   address: string
   metadata: string
-  auctionHouse: string
+  auctionHouse: AuctionHouse
   price: BN
   createdAt: string
   wallets: string[]
