@@ -1,6 +1,4 @@
-import {
-  Connection,
-} from '@solana/web3.js'
+import { Connection } from '@solana/web3.js'
 import { Wallet } from '@metaplex/js'
 import { TransactionBuilder } from './transaction'
 

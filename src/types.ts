@@ -45,7 +45,7 @@ export interface MarktplaceSettingsPayload {
   creators: MarketplaceCreatorPayload[]
   subdomain: string
   address: MarketplaceAddressPayload
-  auctionHouses?: MarketplaceAuctionHousePayload[]
+  auctionHouses: MarketplaceAuctionHousePayload[]
 }
 
 export interface Marketplace {
@@ -54,7 +54,7 @@ export interface Marketplace {
   description: string
   logoUrl: string
   bannerUrl: string
-  auctionHouses: AuctionHouse[]
+  auctionHouses?: AuctionHouse[]
   ownerAddress: string
   creators?: MarketplaceCreator[]
   stats?: MarketplaceStats
@@ -68,6 +68,8 @@ export interface MarketplaceCreator {
   creatorAddress: string
   storeConfigAddress: string
   preview?: Nft[]
+  twitterHandle?: string
+  profile?: TwitterProfile | null
   nftCount?: number
 }
 
@@ -105,7 +107,7 @@ export interface MintStats {
   average: BN
   floor: BN
   mint: string
-  auctionHouse: AuctionHouse
+  auctionHouse: string
 }
 export interface Creator extends UserWallet {
   attributeGroups: AttributeGroup[]
@@ -114,7 +116,6 @@ export interface Creator extends UserWallet {
 }
 
 export interface NftAttribute {
-  metadataAddress: string
   value: string
   traitType: string
 }
@@ -122,6 +123,11 @@ export interface NftAttribute {
 export interface UserWallet {
   address: string
   profile?: TwitterProfile | null
+}
+
+export interface NftOwner extends UserWallet {
+  associatedTokenAccountAddress: string
+  twitterHandle: string
 }
 
 export interface NftCreator extends UserWallet {
@@ -135,28 +141,28 @@ export interface NftCreator extends UserWallet {
 export interface AhListing {
   id: Uuid
   tradeState: string
-  auctionHouse?: AuctionHouse
+  auctionHouse: string
   seller: string
   metadata: string
-  purchaseId?: string
+  purchaseId: string
   price: BN
   tokenSize: number
   tradeStateBump: number
   createdAt: string
-  canceledAt?: string
-  nft?: Nft
+  canceledAt: string
+  nft: Nft
 }
 
 export interface Purchase {
   id: Uuid
   buyer: string
   seller: string
-  auctionHouse?: AuctionHouse
+  auctionHouse: string
   metadata: string
   price: BN
   createdAt: string
   tokenSize: number
-  nft?: Nft
+  nft: Nft
 }
 
 export interface Offer {
@@ -164,15 +170,15 @@ export interface Offer {
   tradeState: string
   buyer: string
   metadata: string
-  auctionHouse?: AuctionHouse
+  auctionHouse: string
   price: BN
-  purchaseId?: Uuid
+  purchaseId: Uuid
   tradeStateBump: number
-  tokenAccount?: string
+  tokenAccount: string
   createdAt: string
-  canceledAt?: string
+  canceledAt: string
   tokenSize: number
-  nft?: Nft
+  nft: Nft
 }
 
 export interface NftFile {
@@ -180,12 +186,6 @@ export interface NftFile {
   fileType: string
   uri: string
 }
-
-interface AddressKeyType {
-  [address: string]: string
-}
-
-export type KeyType = AddressKeyType
 
 export interface Nft {
   address: string
@@ -238,7 +238,7 @@ export enum ActivityType {
 export interface Activity {
   address: string
   metadata: string
-  auctionHouse: AuctionHouse
+  auctionHouse: string
   price: BN
   createdAt: string
   wallets: string[]
@@ -257,52 +257,4 @@ export interface TwitterProfile {
   profileImageUrl?: string
   profileImageUrlLowres?: string
   profileImageUrlHighres?: string
-}
-
-export interface NftCount {
-  total: number
-  listed: number
-}
-
-export interface NftOwner extends UserWallet {
-  associatedTokenAccountAddress: string
-  twitterHandle: string
-}
-export interface Wallet extends UserWallet {
-  nftCounts: WalletNftCount
-  connectionCounts: ConnectionCounts
-}
-
-export interface WalletNftCount {
-  owned: number
-  offered: number
-  listed: number
-}
-
-export interface ConnectionCounts {
-  fromCount: number
-  toCount: number
-}
-
-export interface PricePoint {
-  price: BN
-  date: string
-}
-
-export interface PriceChart {
-  listingFloor: PricePoint[]
-  salesAverage: PricePoint[]
-  totalVolume: PricePoint[]
-}
-
-export interface GetPriceChartData {
-  charts: PriceChart
-}
-
-export interface GetActivities {
-  activities: Activity[]
-}
-
-export interface GetNftData {
-  nft: Nft
 }

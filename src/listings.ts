@@ -155,7 +155,6 @@ export class ListingsClient extends Client {
     const tokenMint = new PublicKey(nft.mintAddress)
     const treasuryMint = new PublicKey(ah.treasuryMint)
     const tokenAccount = new PublicKey(nft.owner.associatedTokenAccountAddress)
-
     const buyerPrice = listing.price.toNumber()
 
     const [tradeState] = await AuctionHouseProgram.findTradeStateAddress(
