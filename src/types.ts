@@ -202,7 +202,7 @@ export interface Nft {
   externalUrl?: string
   creators: NftCreator[]
   attributes?: NftAttribute[]
-  owner?: NftOwner
+  owner: NftOwner
   activities?: Activity[]
   listings?: AhListing[]
   purchases?: Purchase[]
