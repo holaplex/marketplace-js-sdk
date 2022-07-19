@@ -240,14 +240,14 @@ export enum ActivityType {
   Sold = 'purchase',
 }
 export interface Activity {
-  address: string
+  id: Uuid
   metadata: string
-  auctionHouse: AuctionHouse
+  auctionHouse?: AuctionHouse
   price: BN
   createdAt: string
-  wallets: string[]
+  wallets: Wallet[]
   activityType: string
-  nft: Nft
+  nft?: Nft
 }
 
 export interface TwitterProfile {
