@@ -49,14 +49,15 @@ export interface MarktplaceSettingsPayload {
 }
 
 export interface Marketplace {
+  configAddress: string
   subdomain: string
   name: string
   description: string
   logoUrl: string
   bannerUrl: string
-  auctionHouses?: AuctionHouse[]
+  auctionHouses: AuctionHouse[]
   ownerAddress: string
-  creators?: MarketplaceCreator[]
+  creators: MarketplaceCreator[]
   stats?: MarketplaceStats
 }
 
@@ -67,7 +68,7 @@ interface GraphQLObject {
 export interface MarketplaceCreator {
   creatorAddress: string
   storeConfigAddress: string
-  preview?: Nft[]
+  preview: Nft[]
   twitterHandle?: string
   profile?: TwitterProfile | null
   nftCount?: number
@@ -82,12 +83,12 @@ export interface AuctionHouse {
   authority: string
   creator: string
   auctionHouseFeeAccount: string
-  bump?: number
-  treasuryBump?: number
-  feePayerBump?: number
-  sellerFeeBasisPoints?: number
-  requiresSignOff?: boolean
-  canChangeSalePrice?: boolean
+  bump: number
+  treasuryBump: number
+  feePayerBump: number
+  sellerFeeBasisPoints: number
+  requiresSignOff: boolean
+  canChangeSalePrice: boolean
   stats?: MintStats
 }
 
@@ -144,13 +145,13 @@ export interface AhListing {
   auctionHouse?: AuctionHouse
   seller: string
   metadata: string
-  purchaseId: Uuid
+  purchaseId?: Uuid
   price: BN
   tokenSize: number
   tradeStateBump: number
   createdAt: string
-  canceledAt: string
-  nft: Nft
+  canceledAt?: string
+  nft?: Nft
 }
 
 export interface Purchase {
@@ -172,13 +173,13 @@ export interface Offer {
   metadata: string
   auctionHouse?: AuctionHouse
   price: BN
-  purchaseId: Uuid
+  purchaseId?: Uuid
   tradeStateBump: number
-  tokenAccount: string
+  tokenAccount?: string
   createdAt: string
   canceledAt?: string
   tokenSize: number
-  nft: Nft
+  nft?: Nft
 }
 
 export interface NftFile {
@@ -197,9 +198,11 @@ export interface Nft {
   description: string
   category: string
   image: string
+  animationUrl?: string
+  externalUrl?: string
   creators: NftCreator[]
   attributes?: NftAttribute[]
-  owner: NftOwner
+  owner?: NftOwner
   activities?: Activity[]
   listings?: AhListing[]
   purchases?: Purchase[]
@@ -207,6 +210,7 @@ export interface Nft {
   files?: NftFile[]
   collection?: Nft
   createdAt?: string
+  parser?: string
 }
 
 export interface AttributeFilter {
@@ -257,4 +261,52 @@ export interface TwitterProfile {
   profileImageUrl?: string
   profileImageUrlLowres?: string
   profileImageUrlHighres?: string
+}
+
+export interface NftCount {
+  total: number
+  listed: number
+}
+
+export interface NftOwner extends UserWallet {
+  associatedTokenAccountAddress: string
+  twitterHandle: string
+}
+export interface Wallet extends UserWallet {
+  nftCounts: WalletNftCount
+  connectionCounts: ConnectionCounts
+}
+
+export interface WalletNftCount {
+  owned: number
+  offered: number
+  listed: number
+}
+
+export interface ConnectionCounts {
+  fromCount: number
+  toCount: number
+}
+
+export interface PricePoint {
+  price: BN
+  date: string
+}
+
+export interface PriceChart {
+  listingFloor: PricePoint[]
+  salesAverage: PricePoint[]
+  totalVolume: PricePoint[]
+}
+
+export interface GetPriceChartData {
+  charts: PriceChart
+}
+
+export interface GetActivities {
+  activities: Activity[]
+}
+
+export interface GetNftData {
+  nft: Nft
 }
