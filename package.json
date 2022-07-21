@@ -1,6 +1,6 @@
 {
   "name": "@holaplex/marketplace-js-sdk",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Holaplex Marketplace Standard Actions for the Metaplex Auction House program",
   "types": "dist/index.d.ts",
   "main": "dist/index.js",
@@ -33,6 +33,7 @@
     "typescript": "^4.6.3"
   },
   "dependencies": {
+    "@metaplex-foundation/beet": "^0.4.0",
     "@metaplex-foundation/mpl-auction-house": "^1.1.1",
     "@metaplex/js": "^4.12.0",
     "@solana/spl-token": "0.1.8",
