@@ -1,11 +1,13 @@
 import { Connection, PublicKey, Transaction } from '@solana/web3.js'
 import { programs, Wallet } from '@metaplex/js'
 import { createAuctionHouse, updateAuctionHouse } from './instructions'
+import { TokenInfo } from "@solana/spl-token-registry"
 import { MarktplaceSettingsPayload, AuctionHouse } from './types'
 import ipfsSDK from './ipfs'
 import { Client } from './client'
 import { OffersClient } from './offers'
 import { ListingsClient } from './listings'
+import { TreasuryClient } from './treasury'
 import { createWithdrawFromTreasuryInstruction } from '@metaplex-foundation/mpl-auction-house/dist/src/generated/instructions'
 import { EscrowClient } from './escrow'
 import { PendingTransaction } from './transaction'
@@ -20,6 +22,24 @@ export interface MarketplaceClientParams {
 }
 
 export class MarketplaceClient extends Client {
+  static price = function (
+    priceInUnits: number,
+    mintInfo: TokenInfo,
+    precision: number = 5
+  ) {
+    const multiplier = Math.pow(10, precision)
+    const mantissa = 10 ** mintInfo.decimals
+    return Math.round((priceInUnits / mantissa) * multiplier) / multiplier
+  }
+
+  static mantissa = function(
+    price: number,
+    mintInfo: TokenInfo
+  ) {
+    const mantissa = 10 ** mintInfo.decimals
+    return Math.ceil(price * mantissa)
+  }
+
   async create(settings: MarktplaceSettingsPayload, transactionFee: number) {
     const wallet = this.wallet
     const publicKey = wallet.publicKey as PublicKey
@@ -123,58 +143,6 @@ export class MarketplaceClient extends Client {
     return [transaction, []]
   }
 
-  async claimFunds(ah: AuctionHouse) {
-    const wallet = this.wallet
-    const publicKey = wallet.publicKey as PublicKey
-    const connection = this.connection
-    const auctionHouse = new PublicKey(ah.address)
-    const authority = new PublicKey(ah.authority)
-    const treasuryMint = new PublicKey(ah.treasuryMint)
-    const auctionHouseTreasury = new PublicKey(ah.auctionHouseTreasury)
-
-    const treasuryWithdrawalDestination = new PublicKey(
-      ah.treasuryWithdrawalDestination
-    )
-
-    const auctionHouseTreasuryBalance = await connection.getBalance(
-      auctionHouseTreasury
-    )
-
-    const withdrawFromTreasuryInstructionAccounts = {
-      treasuryMint,
-      authority,
-      treasuryWithdrawalDestination,
-      auctionHouseTreasury,
-      auctionHouse,
-    }
-    const withdrawFromTreasuryInstructionArgs = {
-      amount: auctionHouseTreasuryBalance,
-    }
-
-    const withdrawFromTreasuryInstruction =
-      createWithdrawFromTreasuryInstruction(
-        withdrawFromTreasuryInstructionAccounts,
-        withdrawFromTreasuryInstructionArgs
-      )
-
-    const txt = new Transaction()
-
-    txt.add(withdrawFromTreasuryInstruction)
-
-    txt.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
-    txt.feePayer = publicKey
-
-    let signed: Transaction | undefined = undefined
-
-    signed = await wallet.signTransaction(txt)
-
-    let signature: string | undefined = undefined
-
-    signature = await connection.sendRawTransaction(signed.serialize())
-
-    await connection.confirmTransaction(signature, 'confirmed')
-  }
-
   offers(auctionHouse: AuctionHouse): OffersClient {
     return new OffersClient(this.connection, this.wallet, auctionHouse)
   }
@@ -185,6 +153,10 @@ export class MarketplaceClient extends Client {
 
   escrow(auctionHouse: AuctionHouse): EscrowClient {
     return new EscrowClient(this.connection, this.wallet, auctionHouse)
+  }
+
+  treasury(auctionHouse: AuctionHouse): TreasuryClient {
+    return new TreasuryClient(this.connection, this.wallet, auctionHouse)
   }
 }
 
