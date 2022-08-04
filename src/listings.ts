@@ -17,7 +17,6 @@ import {
 import { Client } from './client'
 import { PendingTransaction } from './transaction'
 import { AuctionHouse, Nft, AhListing } from './types'
-import { createExecuteSaleInstruction } from './instructions/createExecuteSale'
 
 const { instructions } = AuctionHouseProgram
 
@@ -27,6 +26,7 @@ const {
   createPrintPurchaseReceiptInstruction,
   createCancelInstruction,
   createCancelListingReceiptInstruction,
+  createExecuteSaleInstruction
 } = instructions
 
 export interface PostListingParams {
