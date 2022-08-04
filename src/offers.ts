@@ -18,7 +18,6 @@ import {
 } from '@solana/spl-token'
 import { Wallet } from '@metaplex/js'
 import { PendingTransaction } from './transaction'
-import { createExecuteSaleInstruction } from './instructions/createExecuteSale'
 
 const { instructions } = AuctionHouseProgram
 const {
@@ -29,6 +28,7 @@ const {
   createSellInstruction,
   createPrintListingReceiptInstruction,
   createPrintPurchaseReceiptInstruction,
+  createExecuteSaleInstruction
 } = instructions
 
 export interface MakeOfferParams {
